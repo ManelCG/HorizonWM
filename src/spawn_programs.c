@@ -5,13 +5,16 @@
 #include "util.h"
 
 int spawn (const Arg *arg){
-  if (fork() == 0) {
+  int pid;
+  if ((pid = fork()) == 0) {
     // if (dpy)
     //   close(ConnectionNumber(dpy));
     setsid();
     execvp(((char **)arg->v)[0], (char **)arg->v);
     die("horizonwm: execvp '%s' failed:", ((char **)arg->v)[0]);
   }
+
+  return pid;
 }
 void spawn_programs_list(const ProgramService *l){
   int i = 0;

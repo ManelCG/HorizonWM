@@ -16,7 +16,7 @@ typedef struct ProgramService {
 
 
 void spawn_programs_list(const ProgramService *l);
-void spawn(const Arg *arg);
+int spawn(const Arg *arg);
 
 /* commands */
 static const char *roficmd[] = { "rofi", "-show", "drun", NULL};
