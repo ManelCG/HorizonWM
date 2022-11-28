@@ -15,19 +15,21 @@ typedef struct ProgramService {
 } ProgramService;
 
 
-void spawn_programs_list(const ProgramService *l);
-int spawn(const Arg *arg);
+void spawn_programs_list(ProgramService *l);
+void spawn(const Arg *arg);
+unsigned int spawn_pid(const Arg *arg);
 
 /* commands */
 static const char *roficmd[] = { "rofi", "-show", "drun", NULL};
 static const char *termcmd[]  = { "alacritty", NULL };
 static const char *browsercmd[]  = { "brave", NULL };
 static const char *picomcmd[] = {"picom", NULL};
-static const char *wallpapercmd[] = {WALLPAPERCMD, "bg", NULL};
 static const char *claviscmd[] = {"clavis", NULL};
+static const char *calculatorcmd[] = {"gnome-calculator", NULL};
+
 static const char *dunstcmd[] = {"dunst", NULL};
 static const char *configkeyboardcmd[] = {"xset", "r", "rate", "300", "50", NULL };
-static const char *setkeyboardlayoutcmd[] = {"setxkbmap", "es", NULL };
+static const char *wallpapercmd[] = {WALLPAPERCMD, "bg", NULL};
 
 //Monitor brightness
 static const char *downbrightnesscmd[] = {"brightnessctl", "s", "5%-", NULL};
@@ -44,12 +46,11 @@ static const char *KBdownbrightnesscmd[] = {"brightnessctl", "-q", "-d='asus::kb
 static const char *KBupbrightnesscmd[] = {"brightnessctl", "-q", "-d='asus::kbd_backlight'", "s", "1+", NULL};
 
 // static const char **startup_programs[] = {
-static const ProgramService startup_programs[] = {
+static ProgramService startup_programs[] = {
   {picomcmd, 0, 0},
   {wallpapercmd, 0, 0},
   {dunstcmd, 0, 0},
   {configkeyboardcmd, 0, 0},
-  {setkeyboardlayoutcmd, 0, 0},
   {0, 0, 0}
 };
 

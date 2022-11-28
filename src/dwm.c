@@ -237,12 +237,15 @@ static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 static void F11_togglefullscreen_handler();
+static void switch_keyboard_mapping();
 
 /* variables */
 static const char broken[] = "broken";
 static char stext[256];
 static int screen;
 static int sw, sh;           /* X display screen geometry width, height */
+
+static int keyboard_mapping;
 
 //BAR
 static int bh;               /* bar height */
@@ -478,6 +481,22 @@ buttonpress(XEvent *e)
 		if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
 			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+}
+
+void switch_keyboard_mapping(){
+  const char *map = keyboard_mappings[0];
+  int num = 0;
+  Arg arg;
+
+  while (map != NULL){
+    num++;
+    map = keyboard_mappings[num];
+  }
+
+  keyboard_mapping = (keyboard_mapping + 1) % num;
+
+  arg.v = keyboard_mappings[keyboard_mapping];
+  scripts_set_keyboard_mapping(&arg);
 }
 
 void
@@ -1670,6 +1689,13 @@ setup(void)
 	/* clean up any zombies immediately */
 	sigchld(0);
 
+  //Keyboard mapping
+  keyboard_mapping = 0;
+  { Arg arg;
+    arg.v = keyboard_mappings[keyboard_mapping];
+    scripts_set_keyboard_mapping(&arg);
+  }
+
 	/* init screen */
 	screen = DefaultScreen(dpy);
 	sw = DisplayWidth(dpy, screen);
@@ -2320,19 +2346,6 @@ zoom(const Arg *arg)
 		return;
 	pop(c);
 }
-
-// void spawn_picom(){
-//   Arg picom = {.v = picomcmd};
-//   spawn(&picom);
-// }
-// void spawn_dunst(){
-//   Arg dunst = {.v = dunstcmd};
-//   spawn(&dunst);
-// }
-// void set_wallpaper(){
-//   Arg wallpaper = {.v = wallpapercmd};
-//   spawn(&wallpaper);
-// }
 
 int
 main(int argc, char *argv[])

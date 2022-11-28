@@ -19,7 +19,7 @@ static const int bar_sleeptime      = 5;       //Seconds. 0 or negative means do
 
 //Fonts
 // static const char *fonts[]          = { "monospace:size=10" };
-static const char *fonts[]          = { "pango:SFNS Display Regular:size=10" };
+static const char *fonts[]          = { "pango:SFNS Display Regular:size=10",  };
 static const char dmenufont[]       = "monospace:size=10";
 
 //Colors
@@ -30,6 +30,12 @@ static const char col_gray4[]       = "#eeeeee";
 static const char col_cyan[]        = "#005577";
 static const char global_bg[]       = "#1a1a1a";
 static const char global_fg[]       = "#dbdbdb";
+
+//Keyboard mappings
+static const char *keyboard_mappings[] = {
+  "es", "en_US",
+  NULL
+};
 
 //Colorschemes
 static const char *colors[][3]      = {
@@ -46,10 +52,11 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class      instance    title       tags mask     isfloating   monitor */
-	{ "Gimp",     NULL,       NULL,       0,            1,           -1 },
-	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
-  { "Clavis",   NULL,       NULL,       0,            1,           -1 },
+	/* class                instance    title       tags mask     isfloating   monitor */
+	{ "Gimp",               NULL,       NULL,       0,            1,           -1 },
+	{ "Firefox",            NULL,       NULL,       1 << 8,       0,           -1 },
+  { "Clavis",             NULL,       NULL,       0,            1,           -1 },
+  { "gnome-calculator",   NULL,       NULL,       0,            1,           -1 },
 };
 
 /* layout(s) */
@@ -98,6 +105,8 @@ static const Key keys[] = {
   { 0,                            XF86XK_KbdBrightnessDown, spawn, {.v = KBdownbrightnesscmd} },
   { 0,                            XF86XK_KbdBrightnessUp, spawn, {.v = KBupbrightnesscmd} },
 
+  { 0,                            XF86XK_Calculator, spawn, {.v = calculatorcmd} },
+
 	{ MODKEY,                       XK_n,      togglebar,      {0} },
 	{ MODKEY|ShiftMask,             XK_e,      quit,           {0} },
 
@@ -145,6 +154,9 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+
+  //Keyboard mappings
+  { MODKEY,                       XK_o,      switch_keyboard_mapping, {0} },
 
 	{ 0,                            XK_Print,  scripts_take_screenshot, {.i = 0} },
 	{ ShiftMask,                    XK_Print,  scripts_take_screenshot, {.i = 1} },
