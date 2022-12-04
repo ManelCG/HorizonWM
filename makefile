@@ -1,4 +1,5 @@
 BASENAME = horizonwm
+WMNAME = HorizonWM
 VERSION = "0.1.0"
 
 SDIR = src
@@ -6,11 +7,12 @@ SDIR = src
 IDIR = include
 LOCALENAME = $(BASENAME)
 
-PROGRAMEXTRAFLAGS = -DHORIZONPATH=$(MEAD_PATH) -DWALLPAPERCMD=\"$(MEAD_PATH)/customiz3d/menu.sh\"
+PROGRAMEXTRAFLAGS = -DHORIZONPATH=$(MEAD_PATH) -DWALLPAPERCMD=\"$(MEAD_PATH)/customiz3d/menu.sh\" -DROFIFULLCNFG=\"$(HOME)/.config/rofi/config.rasi\" -DROFIBARCNFG=\"$(HOME)/.config/rofi/bar.rasi\"
+
 
 
 CCCMD = gcc
-CFLAGS = -I$(IDIR) -Wall -Wno-deprecated-declarations -pedantic -Os -I/usr/X11R6/include -I/usr/include/freetype2 -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_POSIX_C_SOURCE=200809L -DXINERAMA -lX11 -lXinerama $(PROGRAMEXTRAFLAGS) -lfontconfig -lXft  -DLOCALE_=\"$(LOCALENAME)\" -pthread
+CFLAGS = -I$(IDIR) -Wall -Wno-deprecated-declarations -pedantic -Os -I/usr/X11R6/include -I/usr/include/freetype2 -lXrender -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_POSIX_C_SOURCE=200809L -DXINERAMA -lX11 -lXinerama $(PROGRAMEXTRAFLAGS) -lfontconfig -lXft  -DLOCALE_=\"$(LOCALENAME)\" -pthread -DWMNAME=\"$(WMNAME)\"
 
 debug: CC = $(CCCMD) -DDEBUG_ALL -DVERSION=\"$(VERSION)_DEBUG\"
 debug: BDIR = build
@@ -36,10 +38,10 @@ LDIR=lib
 
 LIBS = -lm -lpthread
 
-_DEPS = config.h drw.h util.h spawn_programs.h horizonwm_type_definitions.h bar_modules.h helper_scripts.h
+_DEPS = config.h drw.h util.h spawn_programs.h horizonwm_type_definitions.h bar_modules.h helper_scripts.h global_vars.h menu_scripts.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = dwm.o drw.o util.o spawn_programs.o bar_modules.o helper_scripts.o
+_OBJ = dwm.o drw.o util.o spawn_programs.o bar_modules.o helper_scripts.o menu_scripts.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 WOBJ = $(patsubst %,$(WODIR)/%,$(_OBJ))
 DOBJ = $(patsubst %,$(DODIR)/%,$(_OBJ))
