@@ -15,43 +15,52 @@ typedef struct ProgramService {
 } ProgramService;
 
 
+//All these functions spawn a program, each doing different functionality
+void spawn(const Arg *arg);                                 //Spawns a program
+unsigned int spawn_pid(const Arg *arg);                     //Spawns a program, returns its pid
+void spawn_waitpid(const Arg *arg);                         //Spawns a program. Waits until program terminates
+void spawn_catchoutput(const Arg *, char *, size_t);        //Spawns a program. Saves program output in buffer with size
+int spawn_countlines(const Arg *);                          //Spawns a program. Returns number of lines in output
+int spawn_readint(const Arg *);                             //Spawns a program. Expects int as output of program. Returns it.
+int spawn_readint_feedstdin(const Arg *, const char *buf);  //Spawns a program. Feeds it string to stdin. Expects int as output of program. Returns it.
+
 void spawn_programs_list(ProgramService *l);
-void spawn(const Arg *arg);
-unsigned int spawn_pid(const Arg *arg);
 
 /* commands */
-static const char *roficmd[] = { "rofi", "-show", "drun", NULL};
-static const char *termcmd[]  = { "alacritty", NULL };
-static const char *browsercmd[]  = { "brave", NULL };
-static const char *picomcmd[] = {"picom", NULL};
-static const char *claviscmd[] = {"clavis", NULL};
-static const char *calculatorcmd[] = {"gnome-calculator", NULL};
+extern const char *browsercmd[];
+extern const char *browser_private_cmd[];
 
-static const char *dunstcmd[] = {"dunst", NULL};
-static const char *configkeyboardcmd[] = {"xset", "r", "rate", "300", "50", NULL };
-static const char *wallpapercmd[] = {WALLPAPERCMD, "bg", NULL};
+extern const char *roficmd[];
+extern const char *rofibarcmd[];
+extern const char *termcmd[] ;
+extern const char *picomcmd[];
+extern const char *claviscmd[];
+extern const char *calculatorcmd[];
+
+extern const char *dunstcmd[];
+extern const char *configkeyboardcmd[];
+extern const char *wallpapercmd[];
 
 //Monitor brightness
-static const char *downbrightnesscmd[] = {"brightnessctl", "s", "5%-", NULL};
-static const char *upbrightnesscmd[] = {"brightnessctl", "s", "5%+", NULL};
-static const char *monitoroffcmd[] = {"xset", "dpms", "force", "off", NULL};
+extern const char *downbrightnesscmd[];
+extern const char *upbrightnesscmd[];
+extern const char *monitoroffcmd[];
 
 //Volume
-static const char *upvolumecmd[] = {"pamixer", "-i", "5", NULL};
-static const char *downvolume[]  = {"pamixer", "-d", "5", NULL};
-static const char *mutevolume[]  = {"pamixer", "-t", NULL};
+extern const char *upvolumecmd[];
+extern const char *downvolume[];
+extern const char *mutevolume[];
 
 //Keyboard brightness
-static const char *KBdownbrightnesscmd[] = {"brightnessctl", "-q", "-d='asus::kbd_backlight'", "s", "1-", NULL};
-static const char *KBupbrightnesscmd[] = {"brightnessctl", "-q", "-d='asus::kbd_backlight'", "s", "1+", NULL};
+extern const char *KBdownbrightnesscmd[];
+extern const char *KBupbrightnesscmd[];
 
-// static const char **startup_programs[] = {
-static ProgramService startup_programs[] = {
-  {picomcmd, 0, 0},
-  {wallpapercmd, 0, 0},
-  {dunstcmd, 0, 0},
-  {configkeyboardcmd, 0, 0},
-  {0, 0, 0}
-};
+//System commands
+extern const char *poweroffcmd[];
+extern const char *rebootcmd[];
+extern const char *lockscreencmd[];
+
+// List of programs to be run at startup
+extern ProgramService startup_programs[];
 
 #endif //_SPAWN_PROGRAMS_H_

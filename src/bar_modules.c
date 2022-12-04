@@ -2,8 +2,275 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <dirent.h>
+#include <helper_scripts.h>
+#include <spawn_programs.h>
+#include <stdbool.h>
+#include <global_vars.h>
 
-int date_barmodule(int bufsize, char *retstring){
+#define BATTERY_STATUS_FOLDER "/sys/class/power_supply/BAT"
+#define AC_ADAPTER_FOLDER     "/sys/class/power_supply/AC"
+#define BRIGHTNESS_FOLDER     "/sys/class/backlight/amdgpu_bl1"
+
+#define BATTERY_HEALTHY 0
+#define BATTERY_LOW 1
+#define BATTERY_CRITICAL 2
+
+int battery_status = 0;
+
+int n_updates_pacman = 0;
+int n_updates_aur = 0;
+
+int old_updates = 0;
+
+extern BarModule bar_modules[];
+BarModule bar_modules[] = {
+    //module function               onClick function              module ID (can be 0)    period of module (s)   pixel width on bar
+    {date_barmodule,                NULL,                         BAR_MODULE_DATE,              0,                0},
+    {keyboard_mapping_barmodule,    keyboard_mapping_clicked,     BAR_MODULE_KEYBOARDMAPPING,   0,                0},
+    {battery_status_barmodule,      NULL,                         BAR_MODULE_BATTERYSTATUS,     0,                0},
+    {brightness_barmodule,          brightness_clicked,           BAR_MODULE_BRIGHTNESS,        0,                0},
+    {volume_barmodule,              volume_clicked,               BAR_MODULE_VOLUME,            0,                0},
+
+    {updates_barmodule,             NULL,                         BAR_MODULE_UPDATES,           1,                0},
+    {NULL, NULL, 0, 0, 0}
+};
+
+
+int updates_barmodule(BAR_MODULE_ARGUMENTS){
+  int n_updates_pacman_local;
+  int n_updates_aur_local;
+
+  //Use mutex just to read global variables so we lock for the least time possible
+  pthread_mutex_lock(&mutex_fetchupdates);
+  n_updates_pacman_local = n_updates_pacman;
+  n_updates_aur_local = n_updates_aur;
+  pthread_mutex_unlock(&mutex_fetchupdates);
+
+  if (n_updates_pacman_local > 0 || n_updates_aur_local > 0){
+    snprintf(retstring, bufsize, "%d  %d", n_updates_pacman_local, n_updates_aur_local);
+  }
+
+  strcpy(color, "#FFFF00");
+
+  if (n_updates_pacman_local + n_updates_aur_local > old_updates){
+    char buf[128];
+    snprintf(buf, 127, "%d updates pending\n%d from AUR", n_updates_pacman_local, n_updates_aur_local);
+    notify_send("Updates detected!", buf);
+  }
+
+  old_updates = n_updates_pacman_local + n_updates_aur_local;
+  return 0;
+}
+
+int volume_clicked(int mask, int button){
+  Arg a;
+  switch(button){
+    case 1:
+      a.v = mutevolume;
+      spawn_waitpid(&a);
+      return 0;
+    case 4:
+      a.v = upvolumecmd;
+      spawn_waitpid(&a);
+      return 0;
+    case 5:
+      a.v = downvolume;
+      spawn_waitpid(&a);
+      return 0;
+    default:
+      return -1;
+      break;
+  }
+}
+int volume_barmodule(BAR_MODULE_ARGUMENTS){
+  char buffer_pamixeroutput[8];
+  char *icon = "";
+
+  const char *getvolume_cmd[] = {"pamixer", "--get-volume", NULL };
+  Arg getvolume_arg = {.v = getvolume_cmd};
+
+  const char *getmute_cmd[] = {"pamixer", "--get-mute", NULL };
+  Arg getmute_arg = {.v = getmute_cmd};
+
+  //Get volume pctg
+  spawn_catchoutput(&getvolume_arg, buffer_pamixeroutput, 8);
+  int percent = atoi(buffer_pamixeroutput);
+
+  //Get mute state
+  spawn_catchoutput(&getmute_arg, buffer_pamixeroutput, 8);
+  if (buffer_pamixeroutput[0] == 't'){ //If volume is muted
+    icon = "";
+    strcpy(color, "#ff0000");
+  } else {
+    if (percent >= 70){
+      icon = "";
+    } else if (percent >= 40){
+      icon = "";
+    } else {
+      icon = "";
+    }
+  }
+
+  char progressbar[DEFAULT_PROGRESS_BAR_SIZE];
+  progressbar[0] = '\0';
+  percentage_to_progressbar(progressbar, percent, DEFAULT_PROGRESS_BAR_LEN);
+  sprintf(retstring, "%s  %s %3d%%", icon, progressbar, percent);
+
+  return 0;
+}
+
+int keyboard_mapping_clicked(int mask, int button){
+  switch(button){
+    case 1:
+      switch_keyboard_mapping();
+      return 0;
+    default:
+      return -1;
+  }
+}
+int keyboard_mapping_barmodule(BAR_MODULE_ARGUMENTS){
+  // int **a = (int **) args;
+  // int kbd = *a[0];
+  snprintf(retstring, bufsize, " %s", keyboard_mappings[keyboard_mapping]);
+  return 0;
+}
+
+int brightness_clicked(int mask, int button){
+  Arg a;
+  switch(button){
+    case 1:
+      a.v = monitoroffcmd;
+      spawn_waitpid(&a);
+      return 0;
+    case 4:
+      a.v = upbrightnesscmd;
+      spawn_waitpid(&a);
+      return 0;
+    case 5:
+      a.v = downbrightnesscmd;
+      spawn_waitpid(&a);
+      return 0;
+    default:
+      return -1;
+      break;
+  }
+}
+int brightness_barmodule(BAR_MODULE_ARGUMENTS){
+  int file_buffer_len = strlen(BRIGHTNESS_FOLDER) + 32;
+  char brightnessfile_buffer[file_buffer_len];
+  char max_brightnessfile_buffer[file_buffer_len];
+
+  snprintf(brightnessfile_buffer, file_buffer_len, "%s/brightness", BRIGHTNESS_FOLDER);
+  snprintf(max_brightnessfile_buffer, file_buffer_len, "%s/max_brightness", BRIGHTNESS_FOLDER);
+
+  int brightness = read_file_int(brightnessfile_buffer);
+  int max_brightness = read_file_int(max_brightnessfile_buffer);
+  int percent = 100 * brightness / max_brightness;
+
+  char progressbar[DEFAULT_PROGRESS_BAR_SIZE];
+  progressbar[0] = '\0';
+  percentage_to_progressbar(progressbar, percent, DEFAULT_PROGRESS_BAR_LEN);
+  sprintf(retstring, "  %s %3d%%", progressbar, percent);
+
+  return 0;
+}
+
+int battery_status_barmodule(BAR_MODULE_ARGUMENTS){
+  int selected_battery = 0;
+  int folderbufsize = strlen(BATTERY_STATUS_FOLDER) + 32;
+  char battery_folder_buf[folderbufsize];
+  char file_buf[folderbufsize + 32];
+
+  char AC_online_file_buf[strlen(AC_ADAPTER_FOLDER) + 32];
+
+  float charge_max;
+  float charge_now;
+  float percentf;
+  int percent;
+
+  int oldstatus;
+
+  char *symbol;
+
+  _Bool is_charging;
+
+  snprintf(battery_folder_buf, folderbufsize, "%s%d", BATTERY_STATUS_FOLDER, selected_battery);
+
+  snprintf(file_buf, folderbufsize + 32, "%s/%s", battery_folder_buf, "charge_now");
+  charge_now = read_file_float(file_buf);
+
+  snprintf(file_buf, folderbufsize + 32, "%s/%s", battery_folder_buf, "charge_full");
+  charge_max = read_file_float(file_buf);
+
+  snprintf(AC_online_file_buf, strlen(AC_ADAPTER_FOLDER) + 32, "%s%d/online", AC_ADAPTER_FOLDER, 0);
+  is_charging = read_file_int(AC_online_file_buf)? true : false;
+
+  //If battery is at 99.something, show it as 100.
+  percentf = 100*charge_now/charge_max;
+  if (percentf > 99){
+    percent = 100;
+  } else {
+    percent = (int) percentf;
+  }
+
+  oldstatus = battery_status;
+
+  //        
+  if (percent >= 90){
+    symbol = "";
+    battery_status = BATTERY_HEALTHY;
+  } else if (percent >= 70){
+    symbol = " ";
+    battery_status = BATTERY_HEALTHY;
+  } else if (percent >= 40){
+    symbol = " ";
+    battery_status = BATTERY_HEALTHY;
+  } else if (percent > 15){
+    symbol = " ";
+    battery_status = BATTERY_HEALTHY;
+  } else if (percent > 5){
+    battery_status = BATTERY_LOW;
+    symbol = "";
+  } else {
+    battery_status = BATTERY_CRITICAL;
+    symbol = "";
+  }
+
+  //Notify when significant battery drop
+  if (oldstatus < battery_status && !is_charging){
+    char percent_str[16];
+    snprintf(percent_str, 15, "%d%%", percent);
+    switch(battery_status){
+      case BATTERY_LOW:
+        notify_send_critical("Battery low!", percent_str);
+        break;
+      case BATTERY_CRITICAL:
+        notify_send_timeout_critical("Battery critical!", percent_str, 0); //Timeout of 0 means persistent
+        break;
+    }
+  }
+
+  if (is_charging){
+    strcpy(color, "#00ff00");
+    battery_status = BATTERY_HEALTHY;         //This is just used so if you unplug charger, you get a warning of battery level
+  } else if (battery_status >= BATTERY_LOW){
+    strcpy(color, "#ff0000");
+  }
+
+  ////Show progressbar on battery
+  //char battery_progressbar[DEFAULT_PROGRESS_BAR_LEN * 3];
+  //battery_progressbar[0] = '\0';
+  //percentage_to_progressbar(battery_progressbar, percent, DEFAULT_PROGRESS_BAR_LEN);
+  //sprintf(retstring, "%s %s %d%%", symbol, battery_progressbar, percent);
+
+  //Don't show progressbar on battery
+  sprintf(retstring, "%s %d %%", symbol, percent);
+
+  return 0;
+}
+
+int date_barmodule(BAR_MODULE_ARGUMENTS){
   time_t rawtime;
   struct tm *timeinfo;
   char *weekday = "";
@@ -41,6 +308,6 @@ int date_barmodule(int bufsize, char *retstring){
   // sprintf(retstring, " %s %02d/%s/%d    %02d:%02d:%02d", weekday, timeinfo->tm_mday, month, timeinfo->tm_year+1900, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 
   // Without seconds
-  sprintf(retstring, " %s %02d/%s/%d    %02d:%02d", weekday, timeinfo->tm_mday, month, timeinfo->tm_year+1900, timeinfo->tm_hour, timeinfo->tm_min);
+  sprintf(retstring, " %s %02d %s %d    %02d:%02d", weekday, timeinfo->tm_mday, month, timeinfo->tm_year+1900, timeinfo->tm_hour, timeinfo->tm_min);
   return 0;
 }

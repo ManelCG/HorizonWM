@@ -1,13 +1,46 @@
 #include <helper_scripts.h>
 #include <horizonwm_type_definitions.h>
 #include <spawn_programs.h>
+#include <global_vars.h>
 
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
 #include <time.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+#include <unistd.h>
 
+float read_file_float(const char *file){
+  char buf[128];
+  int fd = open(file, O_RDONLY);
+  read(fd, buf, 128);
+  close(fd);
+  return atof(buf);
+}
+int read_file_int(const char *file){
+  char buf[128];
+  int fd = open(file, O_RDONLY);
+  read(fd, buf, 128);
+  close(fd);
+  return atoi(buf);
+}
+
+void switch_keyboard_mapping(){
+  const char *map = keyboard_mappings[0];
+  int num = 0;
+  Arg arg;
+
+  while (map != NULL){
+    num++;
+    map = keyboard_mappings[num];
+  }
+
+  keyboard_mapping = (keyboard_mapping + 1) % num;
+
+  arg.v = keyboard_mappings[keyboard_mapping];
+  scripts_set_keyboard_mapping(&arg);
+}
 void scripts_set_keyboard_mapping(const Arg *a){
   const char *mapping = a->v;
 
@@ -16,6 +49,55 @@ void scripts_set_keyboard_mapping(const Arg *a){
   arg.v = cmd;
 
   spawn(&arg);
+}
+
+void notify_send(const char *title, const char *text){
+  const char *cmd[] = {"notify-send", title, text, NULL};
+  Arg a;
+  a.v = cmd;
+  spawn(&a);
+}
+void notify_send_critical(const char *title, const char *text){
+  const char *cmd[] = {"notify-send", "-u", "Critical", title, text, NULL};
+  Arg a;
+  a.v = cmd;
+  spawn(&a);
+}
+void notify_send_timeout(const char *title, const char *text, int timeout){
+  char timeout_str[16];
+  snprintf(timeout_str, 16, "%d", timeout);
+  const char *cmd[] = {"notify-send", "-t", timeout_str, title, text, NULL};
+  Arg a;
+  a.v = cmd;
+  spawn(&a);
+}
+void notify_send_timeout_critical(const char *title, const char *text, int timeout){
+  char timeout_str[16];
+  snprintf(timeout_str, 16, "%d", timeout);
+  const char *cmd[] = {"notify-send", "-t", timeout_str, "-u", "Critical", title, text, NULL};
+  Arg a;
+  a.v = cmd;
+  spawn(&a);
+}
+
+int percentage_to_progressbar(char *buffer, int percentage, int len){
+  if (percentage > 100 || percentage < 0 || len < 0){
+    return -1;
+  }
+
+  int current_position = (len * percentage) / 100;
+  for (int i = 0; i < current_position; i++){
+    strcat(buffer, PROGRESSBAR_FULL_CHAR);
+    // buffer[i] = PROGRESSBAR_FULL_CHAR;
+  }
+  // buffer[current_position] = PROGRESSBAR_CURR_CHAR;
+  strcat(buffer, PROGRESSBAR_CURR_CHAR);
+  for (int i = current_position; i < len; i++){
+    strcat(buffer, PROGRESSBAR_EMPTY_CHAR);
+    // buffer[i] = PROGRESSBAR_EMPTY_CHAR;
+  }
+
+  return 0;
 }
 
 void scripts_take_screenshot(const Arg *a){
@@ -33,7 +115,6 @@ void scripts_take_screenshot(const Arg *a){
   char *month = "";
   char bufname[128];
   char bufpath[256];
-  char bufnot[512] = "Error taking screenshot";
 
   d = opendir(SCREENSHOT_DIR);
 
@@ -74,8 +155,9 @@ void scripts_take_screenshot(const Arg *a){
            timeinfo->tm_hour,
            timeinfo->tm_min);
   snprintf(bufpath, 255, "%s/%s", SCREENSHOT_DIR, bufname);
-  snprintf(bufnot, 500, "Took screenshot with name\n%s", bufname);
 
+
+  pthread_mutex_lock(&mutex_drawbar);
   if (a->i == 0){
     const char *cmd[] = {"scrot", bufpath, NULL};
     Arg arg;
@@ -93,11 +175,10 @@ void scripts_take_screenshot(const Arg *a){
   } else {
     return;
   }
+  pthread_mutex_unlock(&mutex_drawbar);
 
   if (scrot_status == 0){
-    const char *notify[] = {"notify-send", bufnot, NULL};
-    Arg arg;
-    arg.v = notify;
-    spawn(&arg);
+    notify_send("Screenshot taken!", bufname);
   }
+
 }

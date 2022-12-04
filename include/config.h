@@ -4,6 +4,7 @@
 
 #include <spawn_programs.h>
 #include <helper_scripts.h>
+#include <menu_scripts.h>
 #include <X11/XF86keysym.h>
 
 //Borders and gaps
@@ -13,8 +14,10 @@ static const unsigned int def_gap_i = 10;       //Default inner gap
 static const unsigned int def_gap_o = 20;       //Default outter gap
 
 //Bar
-static const int showbar            = 1;        /* 0 means no bar */
-static const int topbar             = 1;        /* 0 means bottom bar */
+static const int showbar            = 1;       //0 means no bar
+static const int bar_lobar          = 3;       //Thickness of bar color details (bottom)
+static const int bar_hibar          = 0;       //Thickness of bar color details (bottom)
+static const int topbar             = 1;       //0=bottom bar, 1=top bar
 static const int bar_sleeptime      = 5;       //Seconds. 0 or negative means dont update
 
 //Fonts
@@ -30,12 +33,6 @@ static const char col_gray4[]       = "#eeeeee";
 static const char col_cyan[]        = "#005577";
 static const char global_bg[]       = "#1a1a1a";
 static const char global_fg[]       = "#dbdbdb";
-
-//Keyboard mappings
-static const char *keyboard_mappings[] = {
-  "es", "en_US",
-  NULL
-};
 
 //Colorschemes
 static const char *colors[][3]      = {
@@ -90,76 +87,88 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_d,      spawn,          {.v = roficmd } },
 	{ MODKEY,                       XK_Return, spawn,          {.v = termcmd } },
 	{ MODKEY,                       XK_b,      spawn,          {.v = browsercmd } },
+	{ MODKEY|ShiftMask,             XK_b,      spawn,          {.v = browser_private_cmd } },
 	{ MODKEY,                       XK_x,      spawn,          {.v = claviscmd } },
 
   //  ##### Function keys #####
   //Volume
-  { 0,                            XF86XK_AudioRaiseVolume, spawn, {.v = upvolumecmd} },
-  { 0,                            XF86XK_AudioLowerVolume, spawn, {.v = downvolume} },
-  { 0,                            XF86XK_AudioMute, spawn, {.v = mutevolume} },
+  { 0,                            XF86XK_AudioRaiseVolume,    spawn_waitpid,                 {.v = upvolumecmd}          },
+  { 0,                            XF86XK_AudioLowerVolume,    spawn_waitpid,                 {.v = downvolume}           },
+  { 0,                            XF86XK_AudioMute,           spawn_waitpid,                 {.v = mutevolume}           },
+  //Volume (update bar)
+  { 0,                            XF86XK_AudioRaiseVolume,    drawbars_caller_with_arg,      {0}                         },
+  { 0,                            XF86XK_AudioLowerVolume,    drawbars_caller_with_arg,      {0}                         },
+  { 0,                            XF86XK_AudioMute,           drawbars_caller_with_arg,      {0}                         },
   //Monitor
-  { 0,                            XF86XK_MonBrightnessDown, spawn, {.v = downbrightnesscmd} },
-  { 0,                            XF86XK_MonBrightnessUp, spawn, {.v = upbrightnesscmd} },
-  { 0,                            XF86XK_ScreenSaver, spawn, {.v = monitoroffcmd} },
+  { 0,                            XF86XK_MonBrightnessDown,   spawn_waitpid,                 {.v = downbrightnesscmd}    },
+  { 0,                            XF86XK_MonBrightnessUp,     spawn_waitpid,                 {.v = upbrightnesscmd}      },
+  { 0,                            XF86XK_ScreenSaver,         spawn_waitpid,                 {.v = monitoroffcmd}        },
+  //Monitor (update bar)
+  { 0,                            XF86XK_MonBrightnessDown,   drawbars_caller_with_arg,      {0}                         },
+  { 0,                            XF86XK_MonBrightnessUp,     drawbars_caller_with_arg,      {0}                         },
+  { 0,                            XF86XK_ScreenSaver,         drawbars_caller_with_arg,      {0}                         },
   //KBD light
-  { 0,                            XF86XK_KbdBrightnessDown, spawn, {.v = KBdownbrightnesscmd} },
-  { 0,                            XF86XK_KbdBrightnessUp, spawn, {.v = KBupbrightnesscmd} },
+  { 0,                            XF86XK_KbdBrightnessDown,   spawn,                         {.v = KBdownbrightnesscmd}  },
+  { 0,                            XF86XK_KbdBrightnessUp,     spawn,                         {.v = KBupbrightnesscmd}    },
+  //PowerMenu
+  { 0,                            XF86XK_PowerOff,            menuscripts_powermenu,         {0}                         },
 
-  { 0,                            XF86XK_Calculator, spawn, {.v = calculatorcmd} },
+  { 0,                            XF86XK_Calculator,          spawn,                         {.v = calculatorcmd}        },
 
-	{ MODKEY,                       XK_n,      togglebar,      {0} },
-	{ MODKEY|ShiftMask,             XK_e,      quit,           {0} },
+	{ MODKEY,                       XK_n,                       togglebar,                     {0}                         },
+	{ MODKEY|ShiftMask,             XK_e,                       quit,                          {0}                         },
 
   //Move between windows
-	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
-	{ MODKEY,                       XK_Right,  focusstack,     {.i = +1 } },
-	{ MODKEY,                       XK_Left,   focusstack,     {.i = -1 } },
-	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
+	{ MODKEY,                       XK_j,                       focusstack,                    {.i = +1 }                  },
+	{ MODKEY,                       XK_Right,                   focusstack,                    {.i = +1 }                  },
+	{ MODKEY,                       XK_Left,                    focusstack,                    {.i = -1 }                  },
+	{ MODKEY,                       XK_k,                       focusstack,                    {.i = -1 }                  },
 
   //Restack master
-	{ MODKEY,                       XK_minus,  incnmaster,     {.i = +1 } },
-	{ MODKEY,                       XK_plus,   incnmaster,     {.i = -1 } },
+	{ MODKEY,                       XK_minus,                   incnmaster,                    {.i = +1 }                  },
+	{ MODKEY,                       XK_plus,                    incnmaster,                    {.i = -1 }                  },
 
   //Resize windows
-	{ MODKEY|ShiftMask,             XK_Right,  setmfact,       {.f = +0.05} },
-	{ MODKEY|ShiftMask,             XK_Left,   setmfact,       {.f = -0.05} },
+	{ MODKEY|ShiftMask,             XK_Right,                   setmfact,                      {.f = +0.05}                },
+	{ MODKEY|ShiftMask,             XK_Left,                    setmfact,                      {.f = -0.05}                },
 
-  { 0,                            XK_F11,    F11_togglefullscreen_handler, {0} },
+  { 0,                            XK_F11,                     F11_togglefullscreen_handler,  {0}                         },
 
-	{ MODKEY|ShiftMask,             XK_Return, zoom,           {0} },
-	{ MODKEY,                       XK_Tab,    view,           {0} },
-	{ MODKEY,                       XK_q,      killclient,     {0} },
+	{ MODKEY|ShiftMask,             XK_Return,                  zoom,                          {0}                         },
+	{ MODKEY,                       XK_Tab,                     view,                          {0}                         },
+	{ MODKEY,                       XK_q,                       killclient,                    {0}                         },
 
-	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
-	// { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
-	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
-	{ MODKEY,                       XK_space,  setlayout,      {0} },
+	{ MODKEY,                       XK_t,                       setlayout,                     {.v = &layouts[0]}          },
+	// { MODKEY,                       XK_f,                       setlayout,                     {.v = &layouts[1]}          },
+	{ MODKEY,                       XK_m,                       setlayout,                     {.v = &layouts[2]}          },
+	{ MODKEY,                       XK_space,                   setlayout,                     {0}                         },
 
   //Gaps
-	{ MODKEY|ShiftMask,             XK_plus,   modgaps,        {.i = +5} },
-	{ MODKEY|ShiftMask,             XK_minus,  modgaps,        {.i = -5} },
-  { MODKEY,                       XK_f,      togglegaps,     {.i = 0}  },
-  { MODKEY|ShiftMask,             XK_f,      togglegaps,     {.i = 1}  },
+	{ MODKEY|ShiftMask,             XK_plus,                    modgaps,                       {.i = +5}                   },
+	{ MODKEY|ShiftMask,             XK_minus,                   modgaps,                       {.i = -5}                   },
+  { MODKEY,                       XK_f,                       togglegaps,                    {.i = 0}                    },
+  { MODKEY|ShiftMask,             XK_f,                       togglegaps,                    {.i = 1}                    },
 
   //Floating
-	{ MODKEY,                       XK_g,      togglefloating, {0} },
+	{ MODKEY,                       XK_g,                       togglefloating,                {0}                         },
 
   //View all tags
-	{ MODKEY,                       XK_apostrophe,view,        {.ui = ~0 } },
+	{ MODKEY,                       XK_apostrophe,              view,                          {.ui = ~0 }                 },
 
   //Sticky
-	{ MODKEY|ShiftMask,             XK_s,      tag,            {.ui = ~0 } },
+	{ MODKEY,                       XK_s,                       tag,                           {.ui = ~0 }                 },
 
-	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
-	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
-	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
-	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+	{ MODKEY,                       XK_comma,                   focusmon,                      {.i = -1 }                  },
+	{ MODKEY,                       XK_period,                  focusmon,                      {.i = +1 }                  },
+	{ MODKEY|ShiftMask,             XK_comma,                   tagmon,                        {.i = -1 }                  },
+	{ MODKEY|ShiftMask,             XK_period,                  tagmon,                        {.i = +1 }                  },
 
   //Keyboard mappings
-  { MODKEY,                       XK_o,      switch_keyboard_mapping, {0} },
+  { ControlMask,                  XK_Menu,                    switch_keyboard_mapping,       {0}                         },
+  { ControlMask,                  XK_Menu,                    drawbars_caller_with_arg,      {0}                         },
 
-	{ 0,                            XK_Print,  scripts_take_screenshot, {.i = 0} },
-	{ ShiftMask,                    XK_Print,  scripts_take_screenshot, {.i = 1} },
+	{ 0,                            XK_Print,                   scripts_take_screenshot,       {.i = 0}                    },
+	{ ShiftMask,                    XK_Print,                   scripts_take_screenshot,       {.i = 1}                    },
 
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)

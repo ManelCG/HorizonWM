@@ -42,9 +42,10 @@
 #endif /* XINERAMA */
 #include <X11/Xft/Xft.h>
 
-#include "horizonwm_type_definitions.h"
-#include "spawn_programs.h"
-#include "bar_modules.h"
+#include <horizonwm_type_definitions.h>
+#include <spawn_programs.h>
+#include <bar_modules.h>
+#include <global_vars.h>
 
 #include "drw.h"
 #include "util.h"
@@ -72,7 +73,7 @@ enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
-       ClkClientWin, ClkRootWin, ClkLast }; /* clicks */
+       ClkClientWin, ClkRootWin, ClkLast, ClkBarModules }; /* clicks */
 
 typedef struct {
 	unsigned int click;
@@ -163,6 +164,7 @@ static void detachstack(Client *c);
 static Monitor *dirtomon(int dir);
 static void drawbar(Monitor *m);
 static void drawbars(void);
+static void drawbars_caller_with_arg(const Arg *a);
 static void enternotify(XEvent *e);
 static void expose(XEvent *e);
 static void focus(Client *c);
@@ -237,7 +239,6 @@ static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 static void F11_togglefullscreen_handler();
-static void switch_keyboard_mapping();
 
 /* variables */
 static const char broken[] = "broken";
@@ -245,12 +246,19 @@ static char stext[256];
 static int screen;
 static int sw, sh;           /* X display screen geometry width, height */
 
-static int keyboard_mapping;
+int keyboard_mapping;                   //Extern, defined on <global_mutex.h>
+const char *keyboard_mappings[] = {     //Extern, defined on <global_mutex.h>
+  "es", "ru",
+  NULL
+};
+
+//MUTEX
+pthread_mutex_t mutex_drawbar;          //Extern, defined on <global_mutex.h>
+pthread_mutex_t mutex_fetchupdates;     //Extern, defined on <global_mutex.h>
 
 //BAR
 static int bh;               /* bar height */
-static int bar_lobar;
-static int bar_hibar;
+static int bar_separatorwidth;
 
 static int lrpad;            /* sum of left and right padding for text */
 static int (*xerrorxlib)(Display *, XErrorEvent *);
@@ -275,17 +283,19 @@ static Atom wmatom[WMLast], netatom[NetLast];
 static int running = 1;
 static Cur *cursor[CurLast];
 static Clr **scheme;
-static Display *dpy;
+Display *dpy;                       //Extern
 static Drw *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
+
 static int window_gap_inner;
 static int window_gap_outter;
 static pthread_t bar_signal_listener_pthread_t;
 static pthread_t bar_loop_pthread_t;
+static pthread_t updates_checker_pthread_t;
 
 /* configuration, allows nested code to access above variables */
-#include "config.h"
+#include <config.h>
 
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
@@ -434,7 +444,10 @@ attachstack(Client *c)
 void
 buttonpress(XEvent *e)
 {
-	unsigned int i, tags_width, click, is_tag_selected, occ = 0;
+	unsigned int i, j, tags_width, click, is_tag_selected, occ = 0;
+  unsigned int modules_fullwidth = 0, nummodules;
+  int modules_width_progress = 0;  //Used when detecting which module was pressed
+  BarModule module;  //Bar module
 	Arg arg = {0};
 	Client *c;
 	Monitor *m;
@@ -447,6 +460,18 @@ buttonpress(XEvent *e)
 		selmon = m;
 		focus(NULL);
 	}
+
+  //Get full width of modules on the right
+  nummodules = 0;
+  module = bar_modules[nummodules];
+  do {
+    modules_fullwidth += module.width;
+    nummodules++;
+    module = bar_modules[nummodules];
+  } while (module.function != NULL);
+  modules_fullwidth += bar_separatorwidth * (nummodules-1);
+
+  //Are we clicking on the bar?
 	if (ev->window == selmon->barwin) {
 		i = tags_width = 0;
 
@@ -455,22 +480,48 @@ buttonpress(XEvent *e)
       occ |= c->tags;
     }
 
+    //Loop around all tags until the X value of the click is bigger than the length of the counted tags
 		do {
-      is_tag_selected = m->tagset[m->seltags] & 1 << i ? 1 : 0;
-      if (occ & 1 << i || is_tag_selected){
-        tags_width += TEXTW(tags[i]);
+      is_tag_selected = m->tagset[m->seltags] & 1 << i ? 1 : 0;   //Is tag selected?
+      if (occ & 1 << i || is_tag_selected){                       //If tag is selected, or has windows
+        tags_width += TEXTW(tags[i]);                             //Then we count it
       }
-    } while (ev->x >= tags_width && ++i < LENGTH(tags));
+    } while (ev->x >= tags_width && ++i < LENGTH(tags));          //If X is bigger than the count, then break;
 
+    //At this point, i is either the tag clicked, or 1 bigger
+
+    //If i is one of the tags
 		if (i < LENGTH(tags)) {
-			click = ClkTagBar;
-			arg.ui = 1 << i;
-		} else if (ev->x < tags_width + TEXTW(selmon->ltsymbol))
+			click = ClkTagBar;  //We use the ClkTagBar mask
+			arg.ui = 1 << i;    //Arg to be passed to the tag switching function  (mask of tag)
+		} else if (ev->x < tags_width + TEXTW(selmon->ltsymbol)) {
 			click = ClkLtSymbol;
-		else if (ev->x > selmon->ww - (int)TEXTW(stext))
-			click = ClkStatusText;
-		else
+    } else if (ev->x > selmon->ww - modules_fullwidth){ //A bar module has been clicked
+      click = ClkBarModules;
+      //Check which module was clicked
+
+      for (j = 0; j < nummodules; j++){
+        modules_width_progress += bar_modules[j].width;
+        if (ev->x > m->ww - modules_width_progress){  //Module number j was clicked
+          module = bar_modules[j];
+          //Call function with specified click and mask
+          if (module.functionOnClick){
+            module.functionOnClick(CLEANMASK(ev->state), ev->button); //Call the function
+            drawbars();
+          }
+          return;
+        }
+
+        modules_width_progress += bar_separatorwidth;
+        if (ev->x > m->ww - modules_width_progress){  //Separator was clicked
+          j = -1;
+          break;
+        }
+      }
+
+    } else {
 			click = ClkWinTitle;
+    }
 	} else if ((c = wintoclient(ev->window))) {
 		focus(c);
 		restack(selmon);
@@ -481,22 +532,6 @@ buttonpress(XEvent *e)
 		if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
 			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
-}
-
-void switch_keyboard_mapping(){
-  const char *map = keyboard_mappings[0];
-  int num = 0;
-  Arg arg;
-
-  while (map != NULL){
-    num++;
-    map = keyboard_mappings[num];
-  }
-
-  keyboard_mapping = (keyboard_mapping + 1) % num;
-
-  arg.v = keyboard_mappings[keyboard_mapping];
-  scripts_set_keyboard_mapping(&arg);
 }
 
 void
@@ -564,7 +599,7 @@ clientmessage(XEvent *e)
 		return;
 	if (cme->message_type == netatom[NetWMState]) {
 		if (cme->data.l[1] == netatom[NetWMFullscreen]
-		|| cme->data.l[2] == netatom[NetWMFullscreen])
+		|| cme->data.l[2] == netatom[NetWMFullscreen]) {}
 			setfullscreen(c, (cme->data.l[0] == 1 /* _NET_WM_STATE_ADD    */
 				|| (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */ && !c->isfullscreen)));
 	} else if (cme->message_type == netatom[NetActiveWindow]) {
@@ -746,20 +781,65 @@ drawbar(Monitor *m)
 	unsigned int i, occ = 0, urg = 0;
 	Client *c;
 
+  //Quit if we should not draw the bar
 	if (!m->showbar)
 		return;
 
-  //Draw modules
+  //Drawing the bar is protected by mutex
+  pthread_mutex_lock(&mutex_drawbar);
+
+  //Draw empty bar canvas
+  drw_rect(drw, 0, 0, m->ww, bh, 1, 1);
+
+  // ----------- Draw modules -------------
+  int module_width;             //Width in pixels of current module (set inside loop)
+  int side_padding = 7;         //Pixel padding left and right to each module. Gets "doubled" because each module has its own.
+  char buffer[256] = "";        //Text returned by module to be written in bar
+  char module_barcolor[8];      //Color returned by module to be set as extra color accent if bar_hibar or bar_lobar are bigger than 0.
+  const char *module_scheme[3]; //Array of 3 color strings. In reality, will be set to {module_barcolor, module_barcolor, module_barcolor} to just draw line with said color.
+  Clr *scheme_color;            //Color scheme structure, set with drw_scm_create and passed to drw_setscheme.
+
+  //i loops through all modules. module is the module being currently drawn
   i = 0;
   BarModule module = bar_modules[i];
-  char buffer[256] = "";
-  int module_width;
   do {
-    module.function(256, buffer);
+    //Empty the buffers to check if functions return something through them
+    buffer[0] = '\0';           //Text to be written in the module
+    module_barcolor[0] = '\0';  //Color of the bottom / top bar of the module
 
-    module_width = TEXTW(buffer) - lrpad + 5; //5 px padding at right
-    drw_text(drw, m->ww - (module_width + modules_textwidth), 0, module_width, bh, 0, buffer, 0); //Draw module text
-    modules_textwidth += module_width;
+    //Set scheme
+    drw_setscheme(drw, scheme[SchemeNorm]);
+    module.function(256, buffer, NULL, module_barcolor);
+
+    module_width = TEXTW(buffer) - lrpad + side_padding;
+    drw_text(drw, m->ww - (module_width + modules_textwidth), bar_hibar, module_width, bh - (bar_lobar + bar_hibar), 0, buffer, 0); //Draw module text
+
+    if (module_barcolor[0] != '\0'){
+      module_scheme[0] = module_barcolor; // Color scheme internally uses 3 colors, but
+      module_scheme[1] = module_barcolor; // we only want to draw one, so we set all 3
+      module_scheme[2] = module_barcolor; // to be the same color.
+
+		  scheme_color = drw_scm_create(drw, (const char **) module_scheme, 3);
+      drw_setscheme(drw, scheme_color);
+      drw_rect(drw, m->ww - (module_width + modules_textwidth), 0,              module_width - side_padding, bar_hibar, 1, 1);
+      drw_rect(drw, m->ww - (module_width + modules_textwidth), bh - bar_lobar, module_width - side_padding, bar_lobar, 1, 1);
+
+      free(scheme_color);
+      drw_setscheme(drw, scheme[SchemeNorm]);
+    }
+
+    //Offset next drawing position to the left
+    if (strcmp(buffer, "") != 0){
+      module.width = module_width + side_padding; //3px padding on the left
+      bar_modules[i].width = module_width + side_padding;
+      modules_textwidth += module.width;
+
+      //Draw vertical separators between modules
+      if (bar_modules[i+1].function != NULL){
+        drw_rect(drw, m->ww - (modules_textwidth + bar_separatorwidth), 0, bar_separatorwidth, bh, 1, 0);
+        modules_textwidth += bar_separatorwidth;
+      }
+    }
 
     i++;
     module = bar_modules[i];
@@ -785,6 +865,7 @@ drawbar(Monitor *m)
   // 	drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
 
 
+  // -------------- Draw tags (workspaces) ----------------
   //Which tags have windows?
 	for (c = m->clients; c; c = c->next) {
 		occ |= c->tags;
@@ -798,30 +879,32 @@ drawbar(Monitor *m)
     w = TEXTW(tags[i]);
     is_tag_selected = m->tagset[m->seltags] & 1 << i ? 1 : 0;
 
+    //Set scheme (Sel if tag is selected, or norm otherwise)
     drw_setscheme(drw, scheme[is_tag_selected ? SchemeSel : SchemeNorm]);
 
     if (occ & 1 << i || is_tag_selected){
-      drw_text(drw, x, bar_hibar, w, bh-(bar_lobar+bar_hibar), lrpad / 2, tags[i], urg & 1 << i);
+      drw_text(drw, x, bar_hibar, w, bh-(bar_lobar+bar_hibar), lrpad / 2, tags[i], 0);
 
-      drw_rect(drw, x, 0, w, bar_hibar, 1, urg & 1 << i);
-      drw_rect(drw, x, bh - bar_lobar, w, bar_lobar, 1, urg & 1 << i);
+      //Draw lower and upper bar if they exist
+      drw_rect(drw, x, 0, w, bar_hibar, 1, 0);
+      drw_rect(drw, x, bh - bar_lobar, w, bar_lobar, 1, 0);
 
       x += w;
     }
 	}
 
-  //Draw Layout symbol
+  // ------------ Draw selected layout icon -------------
 	w = TEXTW(m->ltsymbol);
 	drw_setscheme(drw, scheme[SchemeNorm]);
   drw_rect(drw, x, 0, w, bh, 1, 1);
 	x = drw_text(drw, x, bar_hibar, w, bh-(bar_lobar + bar_hibar), lrpad / 2, m->ltsymbol, 0);
 
-  //Get number of monitors
+  // ------------- Get number of monitors ---------------
 	for (Monitor *m = mons; m; m = m->next){
     nmons++;
   }
 
-  //Text of current window
+  // ------------- Write text of currently selected window ---------------
 	if ((w = m->ww - modules_textwidth - x) > bh) {
     drw_rect(drw, x, 0, w, bh, 1, 1); //Empty bar all the way to right
 		if (m->sel) {
@@ -830,8 +913,10 @@ drawbar(Monitor *m)
 		}
 	}
 
-  //Draw the actual bar
+  // -------------- Draw bar on screen ---------------
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
+
+  pthread_mutex_unlock(&mutex_drawbar);
 }
 void
 drawbars(void)
@@ -841,18 +926,51 @@ drawbars(void)
 	for (m = mons; m; m = m->next)
 		drawbar(m);
 }
+//This function is just an extra step so to not include the drawbars() function directly in the keys array
+void drawbars_caller_with_arg(const Arg *a){
+  drawbars();
+}
 void *bar_signal_listener(void *args){
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1);
 
-  int s, sig;
+  int /*s,*/ sig;
 
   for (;;) {
-    s = sigwait(&set, &sig);
+    /*s = */sigwait(&set, &sig);
     drawbars();
   }
 
+  return NULL;
+}
+void *updates_checker(void *args){
+  const char *checkupdates[] = {"checkupdates", NULL};
+  Arg checkupdates_arg = {.v = checkupdates};
+
+  const char *checkupdates_aur[] = {"yay", "-Qum", NULL};
+  Arg checkupdates_aur_arg = {.v = checkupdates_aur};
+
+  int updates_pacman_local;
+  int updates_aur_local;
+
+  sleep(20);
+  while (1){
+    // notify_send("Checking for updates", NULL);
+
+    //Get pacman updates
+    updates_pacman_local = spawn_countlines(&checkupdates_arg);
+    updates_aur_local    = spawn_countlines(&checkupdates_aur_arg);
+
+    //Modify the global updates variable in mutex
+    pthread_mutex_lock(&mutex_fetchupdates);
+    n_updates_pacman = updates_pacman_local;
+    n_updates_aur    = updates_aur_local;
+    pthread_mutex_unlock(&mutex_fetchupdates);
+
+    sleep(1);   //First sleep call getting ignored??? Bug with compiler maybe?
+    sleep(300); //Sleep 5 minutes
+  }
   return NULL;
 }
 void *bar_loop(void *args){
@@ -861,6 +979,7 @@ void *bar_loop(void *args){
     return NULL;
   }
   for (;;){
+    sleep(1);
     sleep(sleeptime);
     drawbars();
   }
@@ -1696,6 +1815,10 @@ setup(void)
     scripts_set_keyboard_mapping(&arg);
   }
 
+  //Init mutex
+  pthread_mutex_init(&mutex_drawbar, NULL);
+  pthread_mutex_init(&mutex_fetchupdates, NULL);
+
 	/* init screen */
 	screen = DefaultScreen(dpy);
 	sw = DisplayWidth(dpy, screen);
@@ -1705,8 +1828,7 @@ setup(void)
 	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
-  bar_hibar = 0;
-  bar_lobar = 3;
+  bar_separatorwidth = 0;
 	bh = drw->fonts->h + 6 + bar_lobar + bar_hibar;
 	updategeom();
 	/* init atoms */
@@ -1739,6 +1861,7 @@ setup(void)
 	updatestatus();
   pthread_create(&bar_signal_listener_pthread_t, NULL, bar_signal_listener, NULL);
   pthread_create(&bar_loop_pthread_t, NULL, bar_loop, (void *) &bar_sleeptime);
+  pthread_create(&updates_checker_pthread_t, NULL, updates_checker, NULL);
 	/* supporting window for NetWMCheck */
 	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMCheck], XA_WINDOW, 32,
@@ -1868,7 +1991,7 @@ tile(Monitor *m)
   }
 
   //Where should last pixel row be drawn (fixes rounding-errors)
-  lowbound = m->mh - window_gap_outter;;
+  lowbound = m->mh - window_gap_outter - ((!topbar && selmon->showbar) * bh);
 
   //Default vertical padding of windows (before gaps calculation)
   master_y = 0; slave_y = 0;
@@ -2366,7 +2489,7 @@ main(int argc, char *argv[])
 #endif /* __OpegBSD__ */
 	scan();
 
-  ////Spawn first programs
+  //Spawn first programs. List located in spawn_programs.c and declared in .h
   spawn_programs_list(startup_programs);
 
 	run();
