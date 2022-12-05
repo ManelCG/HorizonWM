@@ -955,14 +955,15 @@ void *bar_signal_listener(void *args){
 }
 
 void *updates_checker(void *args){
-  sleep(20);
+  //Wait a little for internet connection to be stablished
+  sleep(5);
   while (1){
     if (shall_fetch_updates){
       check_updates(NULL);
     }
 
     sleep(1);   //First sleep call getting ignored??? Bug with compiler maybe?
-    sleep(300); //Sleep 5 minutes
+    sleep(900); //Sleep 15 minutes
   }
   return NULL;
 }

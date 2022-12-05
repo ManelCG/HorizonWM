@@ -185,7 +185,6 @@ void scripts_take_screenshot(const Arg *a){
 
 //UPDATES CHECKER
 void  *check_updates(void *args){
-  notify_send("Checking updates", NULL);
   const char *checkupdates[] = {"checkupdates", NULL};
   Arg checkupdates_arg = {.v = checkupdates};
 
