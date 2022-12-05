@@ -8,7 +8,7 @@
 #include <X11/XF86keysym.h>
 
 //Borders and gaps
-static const unsigned int borderpx  = 0;        /* border pixel of windows */
+static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 10;       /* snap pixel */
 static const unsigned int def_gap_i = 10;       //Default inner gap
 static const unsigned int def_gap_o = 20;       //Default outter gap
@@ -28,19 +28,40 @@ static const char *fonts[]          = { "pango:SFNS Display Regular:size=10",  }
 static const char dmenufont[]       = "monospace:size=10";
 
 //Colors
-// static const char col_gray1[]       = "#222222";
-// static const char col_gray2[]       = "#444444";
-// static const char col_gray3[]       = "#bbbbbb";
-// static const char col_gray4[]       = "#eeeeee";
-// static const char col_cyan[]        = "#005577";
-static const char global_bg[]       = "#1a1a1a";
-static const char global_fg[]       = "#dbdbdb";
+static const char Ice        [2][8] = {"#c7f8fc", "#00545b"};
+static const char Ocean_Light[2][8] = {"#001c26", "#a9e7fc"};
+static const char Ocean_Dark [2][8] = {"#001c26", "#07bffc"};
+
+static const char Dusk       [2][8] = {"#1b1521", "#b79fc9"};
+static const char Midnight   [2][8] = {"#10001c", "#dbaefc"};
+static const char Dawn       [2][8] = {"#251335", "#DC5672"};
+
+static const char Purple     [2][8] = {"#07002b", "#bbaefc"};
+static const char Magenta    [2][8] = {"#10001c", "#c374fc"};
+static const char Pink       [2][8] = {"#2b002a", "#f98bf0"};
+
+static const char Blue_Pink  [2][8] = {"#a50890", "#a1dbff"};
+static const char Electricity[2][8] = {"#e5ff02", "#3f3f1b"};
+
+static const char Turquoise  [2][8] = {"#2c3a38", "#04d3b1"};
+static const char Forest     [2][8] = {"#00140c", "#008c56"};
+static const char Life       [2][8] = {"#011e0e", "#b3fcd2"};
+
+static const char Sober      [2][8] = {"#c9c9c9", "#2c3a38"};
+static const char Drack      [2][8] = {"#232323", "#dbdbdb"};
+static const char Matcha     [2][8] = {"#1a1a1a", "#dbdbdb"};
+
+static const char Amber      [2][8] = {"#1e0200", "#f9b2ae"};
+static const char Flame      [2][8] = {"#1e0200", "#fc1105"};
+static const char Ash        [2][8] = {"#262626", "#a80112"};
+
+#define SELECTED_COLORSCHEME Ocean_Light
 
 //Colorschemes
 static const char *colors[][3]      = {
-	/*               fg         bg         border   */
-	[SchemeNorm] = { global_fg, global_bg, global_bg },
-	[SchemeSel]  = { global_bg, global_fg, global_fg  },
+	/*               fg                       bg                       border   */
+	[SchemeNorm] = { SELECTED_COLORSCHEME[1], SELECTED_COLORSCHEME[0], SELECTED_COLORSCHEME[0] },
+	[SchemeSel]  = { SELECTED_COLORSCHEME[0], SELECTED_COLORSCHEME[1], SELECTED_COLORSCHEME[1] },
 };
 
 static const unsigned int alphas[][3] = {
