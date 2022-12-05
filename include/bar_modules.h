@@ -7,9 +7,6 @@ enum {BAR_DEFAULT_MODULE, BAR_MODULE_DATE, BAR_MODULE_KEYBOARDMAPPING, BAR_MODUL
 
 #define BAR_MODULE_ARGUMENTS int bufsize, char *retstring, void *args, char *color
 
-extern int n_updates_pacman;
-extern int n_updates_aur;
-
 //Bar module functions:
 int date_barmodule(BAR_MODULE_ARGUMENTS);
 int keyboard_mapping_barmodule(BAR_MODULE_ARGUMENTS);
@@ -21,6 +18,7 @@ int updates_barmodule(BAR_MODULE_ARGUMENTS);
 //On bar module clicked functions:
 int volume_clicked(int mask, int button);
 int keyboard_mapping_clicked(int mask, int button);
+int updates_clicked(int mask, int button);
 int brightness_clicked(int mask, int button);
 
 typedef int  (*BarModuleFunction)(BAR_MODULE_ARGUMENTS);

@@ -182,3 +182,40 @@ void scripts_take_screenshot(const Arg *a){
   }
 
 }
+
+//UPDATES CHECKER
+void  *check_updates(void *args){
+  notify_send("Checking updates", NULL);
+  const char *checkupdates[] = {"checkupdates", NULL};
+  Arg checkupdates_arg = {.v = checkupdates};
+
+  const char *checkupdates_aur[] = {"yay", "-Qum", NULL};
+  Arg checkupdates_aur_arg = {.v = checkupdates_aur};
+
+  int updates_pacman_local;
+  int updates_aur_local;
+
+  //Get pacman updates
+  updates_pacman_local = spawn_countlines(&checkupdates_arg);
+  updates_aur_local    = spawn_countlines(&checkupdates_aur_arg);
+
+  //Modify the global updates variable in mutex
+  pthread_mutex_lock(&mutex_fetchupdates);
+  n_updates_pacman = updates_pacman_local;
+  n_updates_aur    = updates_aur_local;
+  pthread_mutex_unlock(&mutex_fetchupdates);
+
+  return NULL;
+}
+void async_check_updates_handler(const Arg *a){
+  pthread_t tid;
+  pthread_create(&tid, NULL, check_updates, NULL);
+}
+void toggle_update_checks(const Arg *a){
+  if (shall_fetch_updates){
+    shall_fetch_updates = false;
+  } else {
+    shall_fetch_updates = true;
+    async_check_updates_handler(NULL);
+  }
+}

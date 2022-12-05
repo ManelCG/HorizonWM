@@ -123,6 +123,10 @@ static const Key keys[] = {
 
   { 0,                            XF86XK_Calculator,          spawn,                         {.v = calculatorcmd}        },
 
+  //Updates checker
+  { MODKEY,                       XK_u,                       toggle_update_checks,          {0}                         },
+  { MODKEY,                       XK_u,                       drawbars_caller_with_arg,      {0}                         },
+
 	{ MODKEY,                       XK_n,                       togglebar,                     {0}                         },
 	{ MODKEY|ShiftMask,             XK_e,                       quit,                          {0}                         },
 

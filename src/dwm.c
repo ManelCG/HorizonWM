@@ -253,6 +253,8 @@ const char *keyboard_mappings[] = {     //Extern, defined on <global_mutex.h>
   NULL
 };
 
+bool shall_fetch_updates = true;
+
 //MUTEX
 pthread_mutex_t mutex_drawbar;          //Extern, defined on <global_mutex.h>
 pthread_mutex_t mutex_fetchupdates;     //Extern, defined on <global_mutex.h>
@@ -951,35 +953,20 @@ void *bar_signal_listener(void *args){
 
   return NULL;
 }
+
 void *updates_checker(void *args){
-  const char *checkupdates[] = {"checkupdates", NULL};
-  Arg checkupdates_arg = {.v = checkupdates};
-
-  const char *checkupdates_aur[] = {"yay", "-Qum", NULL};
-  Arg checkupdates_aur_arg = {.v = checkupdates_aur};
-
-  int updates_pacman_local;
-  int updates_aur_local;
-
   sleep(20);
   while (1){
-    // notify_send("Checking for updates", NULL);
-
-    //Get pacman updates
-    updates_pacman_local = spawn_countlines(&checkupdates_arg);
-    updates_aur_local    = spawn_countlines(&checkupdates_aur_arg);
-
-    //Modify the global updates variable in mutex
-    pthread_mutex_lock(&mutex_fetchupdates);
-    n_updates_pacman = updates_pacman_local;
-    n_updates_aur    = updates_aur_local;
-    pthread_mutex_unlock(&mutex_fetchupdates);
+    if (shall_fetch_updates){
+      check_updates(NULL);
+    }
 
     sleep(1);   //First sleep call getting ignored??? Bug with compiler maybe?
     sleep(300); //Sleep 5 minutes
   }
   return NULL;
 }
+
 void *bar_loop(void *args){
   int sleeptime = *((int *) args);
   if (sleeptime <= 0){

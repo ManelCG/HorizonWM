@@ -32,7 +32,7 @@ BarModule bar_modules[] = {
     {brightness_barmodule,          brightness_clicked,           BAR_MODULE_BRIGHTNESS,        0,                0},
     {volume_barmodule,              volume_clicked,               BAR_MODULE_VOLUME,            0,                0},
 
-    {updates_barmodule,             NULL,                         BAR_MODULE_UPDATES,           1,                0},
+    {updates_barmodule,             updates_clicked,              BAR_MODULE_UPDATES,           1,                0},
     {NULL, NULL, 0, 0, 0}
 };
 
@@ -47,11 +47,15 @@ int updates_barmodule(BAR_MODULE_ARGUMENTS){
   n_updates_aur_local = n_updates_aur;
   pthread_mutex_unlock(&mutex_fetchupdates);
 
-  if (n_updates_pacman_local > 0 || n_updates_aur_local > 0){
+  if (!shall_fetch_updates || n_updates_pacman_local > 0 || n_updates_aur_local > 0){
     snprintf(retstring, bufsize, "%d  %d", n_updates_pacman_local, n_updates_aur_local);
   }
 
-  strcpy(color, "#FFFF00");
+  if (shall_fetch_updates){
+    strcpy(color, "#FFFF00");
+  } else {
+    strcpy(color, "#FF0000");
+  }
 
   if (n_updates_pacman_local + n_updates_aur_local > old_updates){
     char buf[128];
@@ -61,6 +65,18 @@ int updates_barmodule(BAR_MODULE_ARGUMENTS){
 
   old_updates = n_updates_pacman_local + n_updates_aur_local;
   return 0;
+}
+int updates_clicked(int mask, int button){
+  switch(button){
+    case 1:
+      async_check_updates_handler(NULL);
+      return 0;
+    case 3:
+      toggle_update_checks(NULL);
+      return 0;
+    default:
+      return -1;
+  }
 }
 
 int volume_clicked(int mask, int button){

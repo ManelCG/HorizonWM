@@ -18,4 +18,8 @@ int percentage_to_progressbar(char *buffer, int pctg, int len);
 
 void switch_keyboard_mapping();
 
+void toggle_update_checks(const Arg *a);
+void async_check_updates_handler(const Arg *a);
+void *check_updates(void *args);
+
 #endif
