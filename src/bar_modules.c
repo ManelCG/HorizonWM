@@ -40,18 +40,25 @@ BarModule bar_modules[] = {
 int updates_barmodule(BAR_MODULE_ARGUMENTS){
   int n_updates_pacman_local;
   int n_updates_aur_local;
+  bool checking_updates_local;
 
   //Use mutex just to read global variables so we lock for the least time possible
   pthread_mutex_lock(&mutex_fetchupdates);
   n_updates_pacman_local = n_updates_pacman;
   n_updates_aur_local = n_updates_aur;
+  checking_updates_local = checking_updates;
   pthread_mutex_unlock(&mutex_fetchupdates);
 
-  if (!shall_fetch_updates || n_updates_pacman_local > 0 || n_updates_aur_local > 0){
+  if (checking_updates_local){
+    snprintf(retstring, bufsize, "%d  %d", n_updates_pacman_local, n_updates_aur_local);
+  }
+  else if (!shall_fetch_updates || n_updates_pacman_local > 0 || n_updates_aur_local > 0){
     snprintf(retstring, bufsize, "%d  %d", n_updates_pacman_local, n_updates_aur_local);
   }
 
-  if (shall_fetch_updates){
+  if (checking_updates_local){
+    strcpy(color, "#00FF00");
+  } else if (shall_fetch_updates){
     strcpy(color, "#FFFF00");
   } else {
     strcpy(color, "#FF0000");

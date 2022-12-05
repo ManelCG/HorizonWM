@@ -254,6 +254,7 @@ const char *keyboard_mappings[] = {     //Extern, defined on <global_mutex.h>
 };
 
 bool shall_fetch_updates = true;
+bool checking_updates = false;
 
 //MUTEX
 pthread_mutex_t mutex_drawbar;          //Extern, defined on <global_mutex.h>

@@ -185,6 +185,10 @@ void scripts_take_screenshot(const Arg *a){
 
 //UPDATES CHECKER
 void  *check_updates(void *args){
+  pthread_mutex_lock(&mutex_fetchupdates);
+  checking_updates = true;
+  pthread_mutex_unlock(&mutex_fetchupdates);
+
   const char *checkupdates[] = {"checkupdates", NULL};
   Arg checkupdates_arg = {.v = checkupdates};
 
@@ -202,6 +206,7 @@ void  *check_updates(void *args){
   pthread_mutex_lock(&mutex_fetchupdates);
   n_updates_pacman = updates_pacman_local;
   n_updates_aur    = updates_aur_local;
+  checking_updates = false;
   pthread_mutex_unlock(&mutex_fetchupdates);
 
   return NULL;

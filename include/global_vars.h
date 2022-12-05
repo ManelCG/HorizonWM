@@ -13,6 +13,8 @@
 extern int n_updates_pacman;
 extern int n_updates_aur;
 
+extern bool checking_updates;
+
 extern int keyboard_mapping;
 extern const char *keyboard_mappings[];
 
