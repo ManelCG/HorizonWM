@@ -1987,7 +1987,7 @@ tile(Monitor *m)
   }
 
   //Where should last pixel row be drawn (fixes rounding-errors)
-  lowbound = m->mh - window_gap_outter - ((!topbar && selmon->showbar) * bh);
+  lowbound = m->mh - window_gap_outter - ((!topbar && selmon->showbar) * bh) - 2*borderpx;
 
   //Default vertical padding of windows (before gaps calculation)
   master_y = 0; slave_y = 0;
