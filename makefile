@@ -9,8 +9,6 @@ LOCALENAME = $(BASENAME)
 
 PROGRAMEXTRAFLAGS = -DHORIZONPATH=$(MEAD_PATH) -DWALLPAPERCMD=\"$(MEAD_PATH)/customiz3d/menu.sh\" -DROFIFULLCNFG=\"$(HOME)/.config/rofi/config.rasi\" -DROFIBARCNFG=\"$(HOME)/.config/rofi/bar.rasi\"
 
-
-
 CCCMD = gcc
 CFLAGS = -I$(IDIR) -Wall -Wno-deprecated-declarations -pedantic -Os -I/usr/X11R6/include -I/usr/include/freetype2 -lXrender -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_POSIX_C_SOURCE=200809L -DXINERAMA -lX11 -lXinerama $(PROGRAMEXTRAFLAGS) -lfontconfig -lXft  -DLOCALE_=\"$(LOCALENAME)\" -pthread -DWMNAME=\"$(WMNAME)\"
 

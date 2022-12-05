@@ -12,6 +12,7 @@ static const unsigned int borderpx  = 0;        /* border pixel of windows */
 static const unsigned int snap      = 10;       /* snap pixel */
 static const unsigned int def_gap_i = 10;       //Default inner gap
 static const unsigned int def_gap_o = 20;       //Default outter gap
+static const unsigned int border_alpha = 0xff;  //Border opacity (opaque)
 
 //Bar
 static const int showbar            = 1;       //0 means no bar
@@ -19,6 +20,7 @@ static const int bar_lobar          = 3;       //Thickness of bar color details 
 static const int bar_hibar          = 0;       //Thickness of bar color details (bottom)
 static const int topbar             = 1;       //0=bottom bar, 1=top bar
 static const int bar_sleeptime      = 5;       //Seconds. 0 or negative means dont update
+static const int bar_alpha          = 0xcc;    //Bar opacity 80%
 
 //Fonts
 // static const char *fonts[]          = { "monospace:size=10" };
@@ -39,6 +41,12 @@ static const char *colors[][3]      = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { global_fg, global_bg, global_bg },
 	[SchemeSel]  = { global_bg, global_fg, global_fg  },
+};
+
+static const unsigned int alphas[][3] = {
+  //
+  [SchemeNorm] = { 0xff,      bar_alpha, border_alpha },
+  [SchemeSel]  = { 0xff,      0xff, border_alpha },
 };
 
 /* tagging */
