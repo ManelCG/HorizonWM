@@ -1395,14 +1395,34 @@ movemouse(const Arg *arg)
 
 			nx = ocx + (ev.xmotion.x - x);
 			ny = ocy + (ev.xmotion.y - y);
-			if (abs(selmon->wx - nx) < snap)
+
+      //Snap to X (screen border)
+			if (abs(selmon->wx - nx) < snap) {
 				nx = selmon->wx;
-			else if (abs((selmon->wx + selmon->ww) - (nx + WIDTH(c))) < snap)
+			} else if (abs((selmon->wx + selmon->ww) - (nx + WIDTH(c))) < snap){
 				nx = selmon->wx + selmon->ww - WIDTH(c);
-			if (abs(selmon->wy - ny) < snap)
+      }
+      //Snap to X (Inside gaps)
+			else if (abs(selmon->wx + window_gap_outter - nx) < snap) {
+				nx = selmon->wx + window_gap_outter;
+      } else if (abs((selmon->wx + selmon->ww) - (window_gap_outter + nx + WIDTH(c))) < snap) {
+				nx = selmon->wx + selmon->ww - (WIDTH(c) + window_gap_outter);
+      }
+
+      //Snap to Y (Inside gaps)
+			if (abs(selmon->wy + window_gap_outter - ny) < snap) {
+				ny = selmon->wy + window_gap_outter;
+      } else if (abs((selmon->wy + selmon->wh) - (ny + HEIGHT(c) + window_gap_outter)) < snap) {
+				ny = selmon->wy + selmon->wh - (HEIGHT(c) + window_gap_outter);
+      }
+      //Snap to Y (screen border)
+			else if (abs(selmon->wy - ny) < snap) {
 				ny = selmon->wy;
-			else if (abs((selmon->wy + selmon->wh) - (ny + HEIGHT(c))) < snap)
+      } else if (abs((selmon->wy + selmon->wh) - (ny + HEIGHT(c))) < snap) {
 				ny = selmon->wy + selmon->wh - HEIGHT(c);
+      }
+
+
 			if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
 			&& (abs(nx - c->x) > snap || abs(ny - c->y) > snap))
 				togglefloating(NULL);
