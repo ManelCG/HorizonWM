@@ -32,10 +32,26 @@ BarModule bar_modules[] = {
     {brightness_barmodule,          brightness_clicked,           BAR_MODULE_BRIGHTNESS,        0,                0},
     {volume_barmodule,              volume_clicked,               BAR_MODULE_VOLUME,            0,                0},
 
+    {openvpn_barmodule,             NULL,                         BAR_MODULE_OPENVPN,           0,                0},
+
     {updates_barmodule,             updates_clicked,              BAR_MODULE_UPDATES,           1,                0},
     {NULL, NULL, 0, 0, 0}
 };
 
+int openvpn_barmodule(BAR_MODULE_ARGUMENTS){
+  Arg a;
+  char ovpn_status[32];
+
+  a.v = sysctl_status_ovpn;
+  spawn_catchoutput(&a, ovpn_status, 31);
+
+  if (strncmp(ovpn_status, "active", 6) == 0){
+    snprintf(retstring, bufsize, " VPN");
+    strcpy(color, "#00FF00");
+  }
+
+  return 0;
+}
 
 int updates_barmodule(BAR_MODULE_ARGUMENTS){
   int n_updates_pacman_local;
@@ -74,9 +90,14 @@ int updates_barmodule(BAR_MODULE_ARGUMENTS){
   return 0;
 }
 int updates_clicked(int mask, int button){
+  Arg a;
   switch(button){
     case 1:
       async_check_updates_handler(NULL);
+      return 0;
+    case 2:
+      a.v = updatearchlinuxcmd;
+      spawn(&a);
       return 0;
     case 3:
       toggle_update_checks(NULL);

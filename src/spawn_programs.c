@@ -36,6 +36,10 @@ const char *mutevolume[]            = {"pamixer", "-t", NULL};
 const char *poweroffcmd[]           = {"poweroff", NULL};
 const char *rebootcmd[]             = {"reboot", NULL};
 const char *lockscreencmd[]         = {"i3lock", "-f", "-e", NULL};
+const char *updatearchlinuxcmd[]    = {"alacritty", "-e", "yay", "-Syu", NULL};
+const char *sysctl_status_ovpn[]    = {"systemctl", "is-active", "openvpn-client@client", NULL};
+const char *sysctl_start_ovpn[]     = {"sudo", "systemctl", "start", "openvpn-client@client", NULL};
+const char *sysctl_stop_ovpn[]      = {"sudo", "systemctl", "stop", "openvpn-client@client", NULL};
 
 //Keyboard brightness
 const char *KBdownbrightnesscmd[]   = {"brightnessctl", "-q", "-d='asus::kbd_backlight'", "s", "1-", NULL};
@@ -84,6 +88,19 @@ void spawn_waitpid (const Arg *arg){
   }
 
   waitpid(pid, NULL, 0);
+}
+int spawn_retval(const Arg *arg){
+  int pid, retval = 0;
+  if ((pid = fork() == 0)){
+    if (dpy)
+      close(ConnectionNumber(dpy));
+    setsid();
+    execvp(((char **)arg->v)[0], (char **)arg->v);
+    die("horizonwm: execvp '%s' failed:", ((char **)arg->v)[0]);
+  }
+
+  waitpid(pid, &retval, 0);
+  return retval;
 }
 
 void spawn_catchoutput (const Arg *arg, char *buffer, size_t size){

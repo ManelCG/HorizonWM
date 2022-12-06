@@ -1789,32 +1789,32 @@ resizemouse(const Arg *arg)
 			break;
 		}
 
-    switch(anchor){
-      case RszL:
-        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h/2 + c->bw -1);
-        break;
-      case RszR:
-        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h/2 + c->bw -1);
-        break;
-      case RszB:
-        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->h + c->bw - 1);
-        break;
-      case RszT:
-        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->bw);
-        break;
-      case RszBR:
-        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
-        break;
-      case RszTR:
-        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->bw);
-        break;
-      case RszBL:
-        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h + c->bw - 1);
-        break;
-      case RszTL:
-        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->bw);
-        break;
-    }
+    // switch(anchor){
+    //   case RszL:
+    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h/2 + c->bw -1);
+    //     break;
+    //   case RszR:
+    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h/2 + c->bw -1);
+    //     break;
+    //   case RszB:
+    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->h + c->bw - 1);
+    //     break;
+    //   case RszT:
+    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->bw);
+    //     break;
+    //   case RszBR:
+    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
+    //     break;
+    //   case RszTR:
+    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->bw);
+    //     break;
+    //   case RszBL:
+    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h + c->bw - 1);
+    //     break;
+    //   case RszTL:
+    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->bw);
+    //     break;
+    // }
 
 	} while (ev.type != ButtonRelease);
 

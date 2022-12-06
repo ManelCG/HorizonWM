@@ -23,6 +23,7 @@ void spawn_catchoutput(const Arg *, char *, size_t);        //Spawns a program. 
 int spawn_countlines(const Arg *);                          //Spawns a program. Returns number of lines in output
 int spawn_readint(const Arg *);                             //Spawns a program. Expects int as output of program. Returns it.
 int spawn_readint_feedstdin(const Arg *, const char *buf);  //Spawns a program. Feeds it string to stdin. Expects int as output of program. Returns it.
+int spawn_retval(const Arg *);                              //Spawns a program. Returns the exit value of the program.
 
 void spawn_programs_list(ProgramService *l);
 
@@ -59,6 +60,10 @@ extern const char *KBupbrightnesscmd[];
 extern const char *poweroffcmd[];
 extern const char *rebootcmd[];
 extern const char *lockscreencmd[];
+extern const char *updatearchlinuxcmd[];
+extern const char *sysctl_status_ovpn[];
+extern const char *sysctl_start_ovpn[];
+extern const char *stsctl_stop_ovpn[];
 
 // List of programs to be run at startup
 extern ProgramService startup_programs[];
