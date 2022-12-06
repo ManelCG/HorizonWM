@@ -75,6 +75,9 @@ enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms *
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
        ClkClientWin, ClkRootWin, ClkLast, ClkBarModules }; /* clicks */
 
+//Window resize anchor points
+enum { RszTL, RszT, RszTR, RszR, RszBR, RszB, RszBL, RszL};
+
 typedef struct {
 	unsigned int click;
 	unsigned int mask;
@@ -1537,11 +1540,20 @@ resizeclient(Client *c, int x, int y, int w, int h)
 void
 resizemouse(const Arg *arg)
 {
-	int ocx, ocy, nw, nh;
+	int ocx, ocy, nw, nh, ocw, och;
+  int mousex, mousey;
+  int top, bot, left, right;
+  int medx, medy;
+
 	Client *c;
 	Monitor *m;
 	XEvent ev;
 	Time lasttime = 0;
+
+  int anchor;
+
+  //Window resize anchor points
+  // enum { RszTL, RszT, RszTR, RszR, RszBR, RszB, RszBL, RszL};
 
 	if (!(c = selmon->sel))
 		return;
@@ -1550,10 +1562,57 @@ resizemouse(const Arg *arg)
 	restack(selmon);
 	ocx = c->x;
 	ocy = c->y;
+  ocw = c->w;
+  och = c->h;
+
+  left = c->x; right = c->x + c->w; top = c->y; bot = c->y + c->h;
+  medx = c->x + (c->w/2);
+  medy = c->y + (c->h/2);
+
+  XPeekEvent(dpy, &ev);
+  mousex = ev.xbutton.x_root;
+  mousey = ev.xbutton.y_root;
+
+  //##### Find anchor point #######
+  if (abs(mousex - right) < abs(mousex - medx)){          //On right?
+    if (abs(mousey - bot) < abs(mousey - medy)){          //Bottom?
+      XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
+      anchor = RszBR;
+    } else if (abs(mousey - top) < abs(mousey - medy)){   //Top?
+      XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->bw);
+      anchor = RszTR;
+    } else {  //CenterY
+      XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h/2 + c->bw -1);
+      anchor = RszR;
+    }
+  } else if (abs(mousex - left) < abs(mousex - medx)){    //On left?
+    if (abs(mousey - bot) < abs(mousey - medy)){          //Bottom?
+      XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h + c->bw - 1);
+      anchor = RszBL;
+    } else if (abs(mousey - top) < abs(mousey - medy)){   //Top?
+      XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->bw);
+      anchor = RszTL;
+    } else {  //CenterY
+      XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h/2 + c->bw -1);
+      anchor = RszL;
+    }
+  } else {    //CenterX
+    if (abs(mousey - bot) < abs(mousey - medy)){          //Bottom?
+      XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->h + c->bw - 1);
+      anchor = RszB;
+    } else if (abs(mousey - top) < abs(mousey - medy)){   //Top?
+      XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->bw);
+      anchor = RszT;
+    } else {  //Window Center. Skip resize
+      return;
+    }
+  }
+
 	if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
 		None, cursor[CurResize]->cursor, CurrentTime) != GrabSuccess)
 		return;
-	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
+
+
 	do {
 		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
 		switch(ev.type) {
@@ -1567,21 +1626,198 @@ resizemouse(const Arg *arg)
 				continue;
 			lasttime = ev.xmotion.time;
 
-			nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
-			nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
-			if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
-			&& c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
-			{
-				if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
-				&& (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
-					togglefloating(NULL);
-			}
-			if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-				resize(c, c->x, c->y, nw, nh, 1);
+      switch(anchor){
+        case RszT:
+          nw = c->w;
+          nh = MAX(ocy - ev.xmotion.y - 2 * c->bw + 1 + och, 1);
+          if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+          && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
+          {
+            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+            && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+              togglefloating(NULL);
+          }
+
+          if (nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, ev.xmotion.y, c->w, nh, 1);
+          }
+          break;
+
+        case RszB:
+          nw = c->w;
+          nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
+          if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+          && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
+          {
+            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+            && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+              togglefloating(NULL);
+          }
+
+          if (nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, c->y, c->w, nh, 1);
+          }
+          break;
+
+        case RszR:
+          nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
+          nh = c->h;
+          if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+          && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
+          {
+            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+            && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+              togglefloating(NULL);
+          }
+
+          if (nw > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, c->y, nw, c->h, 1);
+          }
+          break;
+
+        case RszL:
+          nw = MAX(ocx - ev.xmotion.x - 2 * c->bw + 1 + ocw, 1);
+          nh = c->h;
+          if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+          && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
+          {
+            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+            && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+              togglefloating(NULL);
+          }
+          if (nw > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, ev.xmotion.x, c->y, nw, c->h, 1);
+          }
+          break;
+
+        case RszBR:
+          nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
+          nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
+          if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+          && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
+          {
+            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+            && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+              togglefloating(NULL);
+          }
+
+          if (nw > 50 && nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, c->y, nw, nh, 1);
+          } else if (nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, c->y, c->w, nh, 1);
+          } else if (nw > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, c->y, nw, c->h, 1);
+          }
+          break;
+
+        case RszTR:
+          nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
+          nh = MAX(ocy - ev.xmotion.y - 2 * c->bw + 1 + och, 1);
+          if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+          && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
+          {
+            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+            && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+              togglefloating(NULL);
+          }
+
+          if (nw > 50 && nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, ev.xmotion.y, nw, nh, 1);
+          } else if (nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, ev.xmotion.y, c->w, nh, 1);
+          } else if (nw > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, c->y, nw, c->h, 1);
+          }
+          break;
+
+        case RszBL:
+          nw = MAX(ocx - ev.xmotion.x - 2 * c->bw + 1 + ocw, 1);
+          nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
+          if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+          && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
+          {
+            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+            && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+              togglefloating(NULL);
+          }
+          if (nw > 50 && nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, ev.xmotion.x, c->y, nw, nh, 1);
+          } else if (nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, c->y, c->w, nh, 1);
+          } else if (nw > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, ev.xmotion.x, c->y, nw, c->h, 1);
+          }
+          break;
+
+        case RszTL:
+          nw = MAX(ocx - ev.xmotion.x - 2 * c->bw + 1 + ocw, 1);
+          nh = MAX(ocy - ev.xmotion.y - 2 * c->bw + 1 + och, 1);
+          if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
+          && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
+          {
+            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
+            && (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+              togglefloating(NULL);
+          }
+
+          if (nw > 50 && nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, ev.xmotion.x, ev.xmotion.y, nw, nh, 1);
+          } else if (nw > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, ev.xmotion.x, c->y, nw, c->h, 1);
+          } else if (nh > 50){
+            if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+              resize(c, c->x, ev.xmotion.y, c->w, nh, 1);
+          }
+
+          break;
+      }
 			break;
 		}
+
+    switch(anchor){
+      case RszL:
+        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h/2 + c->bw -1);
+        break;
+      case RszR:
+        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h/2 + c->bw -1);
+        break;
+      case RszB:
+        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->h + c->bw - 1);
+        break;
+      case RszT:
+        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->bw);
+        break;
+      case RszBR:
+        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
+        break;
+      case RszTR:
+        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->bw);
+        break;
+      case RszBL:
+        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h + c->bw - 1);
+        break;
+      case RszTL:
+        XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->bw);
+        break;
+    }
+
 	} while (ev.type != ButtonRelease);
-	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
+
 	XUngrabPointer(dpy, CurrentTime);
 	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
