@@ -55,7 +55,7 @@ static const char Amber      [2][8] = {"#1e0200", "#f9b2ae"};
 static const char Flame      [2][8] = {"#1e0200", "#fc1105"};
 static const char Ash        [2][8] = {"#262626", "#a80112"};
 
-#define SELECTED_COLORSCHEME Ocean_Light
+#define SELECTED_COLORSCHEME Matcha
 
 //Colorschemes
 static const char *colors[][3]      = {

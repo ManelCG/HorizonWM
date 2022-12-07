@@ -37,9 +37,9 @@ const char *poweroffcmd[]           = {"poweroff", NULL};
 const char *rebootcmd[]             = {"reboot", NULL};
 const char *lockscreencmd[]         = {"i3lock", "-f", "-e", NULL};
 const char *updatearchlinuxcmd[]    = {"alacritty", "-e", "yay", "-Syu", NULL};
-const char *sysctl_status_ovpn[]    = {"systemctl", "is-active", "openvpn-client@client", NULL};
+const char *sysctl_status_ovpn[]    = {"systemctl", "is-active", "openvpn-client@*", NULL};
 const char *sysctl_start_ovpn[]     = {"sudo", "systemctl", "start", "openvpn-client@client", NULL};
-const char *sysctl_stop_ovpn[]      = {"sudo", "systemctl", "stop", "openvpn-client@client", NULL};
+const char *sysctl_stop_ovpn[]      = {"sudo", "systemctl", "stop", "openvpn-client@*", NULL};
 
 //Keyboard brightness
 const char *KBdownbrightnesscmd[]   = {"brightnessctl", "-q", "-d='asus::kbd_backlight'", "s", "1-", NULL};

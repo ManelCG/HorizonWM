@@ -39,7 +39,7 @@ LIBS = -lm -lpthread
 _DEPS = config.h drw.h util.h spawn_programs.h horizonwm_type_definitions.h bar_modules.h helper_scripts.h global_vars.h menu_scripts.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = dwm.o drw.o util.o spawn_programs.o bar_modules.o helper_scripts.o menu_scripts.o
+_OBJ = horizonwm.o drw.o util.o spawn_programs.o bar_modules.o helper_scripts.o menu_scripts.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 WOBJ = $(patsubst %,$(WODIR)/%,$(_OBJ))
 DOBJ = $(patsubst %,$(DODIR)/%,$(_OBJ))
