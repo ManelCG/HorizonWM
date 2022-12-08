@@ -1626,10 +1626,39 @@ resizemouse(const Arg *arg)
 				continue;
 			lasttime = ev.xmotion.time;
 
+      mousex = ev.xmotion.x;
+      mousey = ev.xmotion.y;
+
+      //Snap to X (screen border)
+			if (abs(selmon->mx - mousex) < snap) {
+				mousex = selmon->mx;
+			} else if (abs((selmon->mx + selmon->mw) - mousex) < snap){
+				mousex = selmon->mx + selmon->mw - borderpx;
+      }
+      //Snap to X (Inside gaps)
+			else if (abs(selmon->mx + window_gap_outter - mousex) < snap) {
+				mousex = selmon->mx + window_gap_outter;
+      } else if (abs((selmon->mx + selmon->mw) - (window_gap_outter + mousex)) < snap) {
+				mousex = selmon->mx + selmon->mw - (window_gap_outter) - borderpx;
+      }
+
+      //Snap to Y (Inside gaps)
+			if (abs(selmon->my + window_gap_outter + selmon->showbar*topbar*bh - mousey) < snap) {
+				mousey = selmon->my + window_gap_outter + selmon->showbar*topbar*bh;
+      } else if (abs((selmon->my + selmon->mh) - (mousey + window_gap_outter + selmon->showbar*(!topbar)*bh)) < snap) {
+				mousey = selmon->my + selmon->mh - (window_gap_outter + selmon->showbar*(!topbar)*bh) - borderpx;
+      }
+      //Snap to Y (screen border)
+			else if (abs(selmon->my - mousey + selmon->showbar*topbar*bh) < snap) {
+				mousey = selmon->my + selmon->showbar*topbar*bh;
+      } else if (abs((selmon->my + selmon->mh) - (mousey + selmon->showbar*(!topbar)*bh)) < snap) {
+				mousey = selmon->my + selmon->mh - selmon->showbar*(!topbar)*bh - borderpx;
+      }
+
       switch(anchor){
         case RszT:
           nw = c->w;
-          nh = MAX(ocy - ev.xmotion.y - 2 * c->bw + 1 + och, 1);
+          nh = MAX(ocy - mousey - 2 * c->bw + 1 + och, 1);
           if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
           && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
           {
@@ -1640,13 +1669,13 @@ resizemouse(const Arg *arg)
 
           if (nh > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, c->x, ev.xmotion.y, c->w, nh, 1);
+              resize(c, c->x, mousey, c->w, nh, 1);
           }
           break;
 
         case RszB:
           nw = c->w;
-          nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
+          nh = MAX(mousey - ocy - 2 * c->bw + 1, 1);
           if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
           && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
           {
@@ -1662,7 +1691,7 @@ resizemouse(const Arg *arg)
           break;
 
         case RszR:
-          nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
+          nw = MAX(mousex - ocx - 2 * c->bw + 1, 1);
           nh = c->h;
           if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
           && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
@@ -1679,7 +1708,7 @@ resizemouse(const Arg *arg)
           break;
 
         case RszL:
-          nw = MAX(ocx - ev.xmotion.x - 2 * c->bw + 1 + ocw, 1);
+          nw = MAX(ocx - mousex - 2 * c->bw + 1 + ocw, 1);
           nh = c->h;
           if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
           && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
@@ -1690,13 +1719,13 @@ resizemouse(const Arg *arg)
           }
           if (nw > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, ev.xmotion.x, c->y, nw, c->h, 1);
+              resize(c, mousex, c->y, nw, c->h, 1);
           }
           break;
 
         case RszBR:
-          nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
-          nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
+          nw = MAX(mousex - ocx - 2 * c->bw + 1, 1);
+          nh = MAX(mousey - ocy - 2 * c->bw + 1, 1);
           if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
           && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
           {
@@ -1718,8 +1747,8 @@ resizemouse(const Arg *arg)
           break;
 
         case RszTR:
-          nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
-          nh = MAX(ocy - ev.xmotion.y - 2 * c->bw + 1 + och, 1);
+          nw = MAX(mousex - ocx - 2 * c->bw + 1, 1);
+          nh = MAX(ocy - mousey - 2 * c->bw + 1 + och, 1);
           if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
           && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
           {
@@ -1730,10 +1759,10 @@ resizemouse(const Arg *arg)
 
           if (nw > 50 && nh > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, c->x, ev.xmotion.y, nw, nh, 1);
+              resize(c, c->x, mousey, nw, nh, 1);
           } else if (nh > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, c->x, ev.xmotion.y, c->w, nh, 1);
+              resize(c, c->x, mousey, c->w, nh, 1);
           } else if (nw > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
               resize(c, c->x, c->y, nw, c->h, 1);
@@ -1741,8 +1770,8 @@ resizemouse(const Arg *arg)
           break;
 
         case RszBL:
-          nw = MAX(ocx - ev.xmotion.x - 2 * c->bw + 1 + ocw, 1);
-          nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
+          nw = MAX(ocx - mousex - 2 * c->bw + 1 + ocw, 1);
+          nh = MAX(mousey - ocy - 2 * c->bw + 1, 1);
           if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
           && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
           {
@@ -1752,19 +1781,19 @@ resizemouse(const Arg *arg)
           }
           if (nw > 50 && nh > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, ev.xmotion.x, c->y, nw, nh, 1);
+              resize(c, mousex, c->y, nw, nh, 1);
           } else if (nh > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
               resize(c, c->x, c->y, c->w, nh, 1);
           } else if (nw > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, ev.xmotion.x, c->y, nw, c->h, 1);
+              resize(c, mousex, c->y, nw, c->h, 1);
           }
           break;
 
         case RszTL:
-          nw = MAX(ocx - ev.xmotion.x - 2 * c->bw + 1 + ocw, 1);
-          nh = MAX(ocy - ev.xmotion.y - 2 * c->bw + 1 + och, 1);
+          nw = MAX(ocx - mousex - 2 * c->bw + 1 + ocw, 1);
+          nh = MAX(ocy - mousey - 2 * c->bw + 1 + och, 1);
           if (c->mon->wx + nw >= selmon->wx && c->mon->wx + nw <= selmon->wx + selmon->ww
           && c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
           {
@@ -1775,13 +1804,13 @@ resizemouse(const Arg *arg)
 
           if (nw > 50 && nh > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, ev.xmotion.x, ev.xmotion.y, nw, nh, 1);
+              resize(c, mousex, mousey, nw, nh, 1);
           } else if (nw > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, ev.xmotion.x, c->y, nw, c->h, 1);
+              resize(c, mousex, c->y, nw, c->h, 1);
           } else if (nh > 50){
             if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-              resize(c, c->x, ev.xmotion.y, c->w, nh, 1);
+              resize(c, c->x, mousey, c->w, nh, 1);
           }
 
           break;
