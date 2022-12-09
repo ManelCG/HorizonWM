@@ -306,7 +306,6 @@ static Colormap cmap;
 
 static int window_gap_inner;
 static int window_gap_outter;
-static pthread_t bar_signal_listener_pthread_t;
 static pthread_t bar_loop_pthread_t;
 static pthread_t updates_checker_pthread_t;
 
@@ -958,20 +957,6 @@ drawbars(void)
 //This function is just an extra step so to not include the drawbars() function directly in the keys array
 void drawbars_caller_with_arg(const Arg *a){
   drawbars();
-}
-void *bar_signal_listener(void *args){
-  sigset_t set;
-  sigemptyset(&set);
-  sigaddset(&set, SIGUSR1);
-
-  int /*s,*/ sig;
-
-  for (;;) {
-    /*s = */sigwait(&set, &sig);
-    drawbars();
-  }
-
-  return NULL;
 }
 
 void *updates_checker(void *args){
@@ -2159,7 +2144,6 @@ setup(void)
 	/* init bars */
 	updatebars();
 	updatestatus();
-  pthread_create(&bar_signal_listener_pthread_t, NULL, bar_signal_listener, NULL);
   pthread_create(&bar_loop_pthread_t, NULL, bar_loop, (void *) &bar_sleeptime);
   pthread_create(&updates_checker_pthread_t, NULL, updates_checker, NULL);
 	/* supporting window for NetWMCheck */
