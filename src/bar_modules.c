@@ -29,6 +29,8 @@ BarModule bar_modules[] = {
     {date_barmodule,                NULL,                         BAR_MODULE_DATE,              0,                0},
     {keyboard_mapping_barmodule,    keyboard_mapping_clicked,     BAR_MODULE_KEYBOARDMAPPING,   0,                0},
     {battery_status_barmodule,      NULL,                         BAR_MODULE_BATTERYSTATUS,     0,                0},
+    {wired_connection_barmodule,    NULL,                         BAR_MODULE_WIRED,             0,                0},
+    {wireless_barmodule,            NULL,                         BAR_MODULE_WIRELESS,          0,                0},
     {brightness_barmodule,          brightness_clicked,           BAR_MODULE_BRIGHTNESS,        0,                0},
     {volume_barmodule,              volume_clicked,               BAR_MODULE_VOLUME,            0,                0},
 
@@ -39,6 +41,41 @@ BarModule bar_modules[] = {
     {updates_barmodule,             updates_clicked,              BAR_MODULE_UPDATES,           1,                0},
     {NULL, NULL, 0, 0, 0}
 };
+
+int wired_connection_barmodule(BAR_MODULE_ARGUMENTS){
+  bool is_con;
+
+  pthread_mutex_lock(&mutex_connection_checker);
+  is_con = is_ethernet_connected;
+  pthread_mutex_unlock(&mutex_connection_checker);
+
+
+  if (!is_con){
+    strcpy(color, "#FF0000");
+    strcpy(retstring, "");
+    return -1;
+  }
+
+  strcpy(retstring, "");
+  return 0;
+}
+
+int wireless_barmodule(BAR_MODULE_ARGUMENTS){
+  bool is_con;
+
+  pthread_mutex_lock(&mutex_connection_checker);
+  is_con = is_wifi_connected;
+  pthread_mutex_unlock(&mutex_connection_checker);
+
+  if (!is_con){
+    strcpy(color, "#FF0000");
+    strcpy(retstring, "");
+    return -1;
+  }
+
+  snprintf(retstring, bufsize, " %s", wifi_ssid);
+  return 0;
+}
 
 int wm_mode_barmodule(BAR_MODULE_ARGUMENTS){
   if (wm_mode == WMModeDraw){

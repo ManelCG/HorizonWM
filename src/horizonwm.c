@@ -259,13 +259,17 @@ const char *keyboard_mappings[] = {     //Extern, defined on <global_vars.h>
 };
 
 int wm_mode;                            //Extern defined on <global_vars.h>
+bool is_ethernet_connected;             //Extern defined on <global_vars.h>
+bool is_wifi_connected;                 //Extern defined on <global_vars.h>
+char wifi_ssid[128];                    //Extern defined on <global_vars.h>
 
 bool shall_fetch_updates = true;
 bool checking_updates = false;
 
 //MUTEX
-pthread_mutex_t mutex_drawbar;          //Extern, defined on <global_vars.h>
-pthread_mutex_t mutex_fetchupdates;     //Extern, defined on <global_vars.h>
+pthread_mutex_t mutex_drawbar;            //Extern, defined on <global_vars.h>
+pthread_mutex_t mutex_fetchupdates;       //Extern, defined on <global_vars.h>
+pthread_mutex_t mutex_connection_checker; //Extern, defined on <global_vars.h>
 
 //BAR
 static int bh;               /* bar height */
@@ -308,6 +312,7 @@ static int window_gap_inner;
 static int window_gap_outter;
 static pthread_t bar_loop_pthread_t;
 static pthread_t updates_checker_pthread_t;
+static pthread_t connection_checker_pthread_t;
 
 /* configuration, allows nested code to access above variables */
 #include <config.h>
@@ -971,6 +976,52 @@ void *updates_checker(void *args){
     sleep(900); //Sleep 15 minutes
   }
   return NULL;
+}
+
+void *connection_checker(void *args){
+  Arg arg_eth = {.v = nmcli_getdevstatus};
+  Arg arg_wifi = {.v = nmcli_getssids};
+  bool is_e_con = false;
+  bool is_w_con = false;
+  char *pattern_wifi = "^yes";
+  char *pattern_eth = "ethernet";
+  char buffer[128];
+  char *tok;
+
+  for (;;){
+    //Get ethernet status
+    spawn_greppattern(&arg_eth, pattern_eth, buffer, 127);
+    tok = strchr(buffer, '\n');
+    if (tok != NULL){
+      *tok = '\0';
+    }
+    if (strcmp(buffer, "") == 0 || strncmp(buffer, "connected:", 10) != 0){
+      is_e_con = false;
+    } else {
+      is_e_con = true;
+    }
+
+    //Get wifi status
+    spawn_greppattern(&arg_wifi, pattern_wifi, buffer, 127);
+    if (strcmp(buffer, "") == 0 || strncmp(buffer, "yes:", 4) != 0){
+      is_w_con = false;
+    } else {
+      tok = strchr(buffer, '\n');
+      if (tok != NULL){
+        is_w_con = true;
+        *tok = '\0';
+      }
+    }
+
+    pthread_mutex_lock(&mutex_connection_checker);
+    is_ethernet_connected = is_e_con;
+    is_wifi_connected = is_w_con;
+    snprintf(wifi_ssid, 127, buffer+4);
+    pthread_mutex_unlock(&mutex_connection_checker);
+
+    sleep(1);
+    sleep(5);
+  }
 }
 
 void *bar_loop(void *args){
@@ -2101,6 +2152,7 @@ setup(void)
   //Init mutex
   pthread_mutex_init(&mutex_drawbar, NULL);
   pthread_mutex_init(&mutex_fetchupdates, NULL);
+  pthread_mutex_init(&mutex_connection_checker, NULL);
 
 	/* init screen */
 	screen = DefaultScreen(dpy);
@@ -2146,6 +2198,7 @@ setup(void)
 	updatestatus();
   pthread_create(&bar_loop_pthread_t, NULL, bar_loop, (void *) &bar_sleeptime);
   pthread_create(&updates_checker_pthread_t, NULL, updates_checker, NULL);
+  pthread_create(&connection_checker_pthread_t, NULL, connection_checker, NULL);
 	/* supporting window for NetWMCheck */
 	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMCheck], XA_WINDOW, 32,

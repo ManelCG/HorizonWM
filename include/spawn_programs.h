@@ -16,14 +16,15 @@ typedef struct ProgramService {
 
 
 //All these functions spawn a program, each doing different functionality
-void spawn(const Arg *arg);                                 //Spawns a program
-unsigned int spawn_pid(const Arg *arg);                     //Spawns a program, returns its pid
-void spawn_waitpid(const Arg *arg);                         //Spawns a program. Waits until program terminates
-void spawn_catchoutput(const Arg *, char *, size_t);        //Spawns a program. Saves program output in buffer with size
-int spawn_countlines(const Arg *);                          //Spawns a program. Returns number of lines in output
-int spawn_readint(const Arg *);                             //Spawns a program. Expects int as output of program. Returns it.
-int spawn_readint_feedstdin(const Arg *, const char *buf);  //Spawns a program. Feeds it string to stdin. Expects int as output of program. Returns it.
-int spawn_retval(const Arg *);                              //Spawns a program. Returns the exit value of the program.
+void spawn(const Arg *arg);                                           //Spawns a program
+unsigned int spawn_pid(const Arg *arg);                               //Spawns a program, returns its pid
+void spawn_waitpid(const Arg *arg);                                   //Spawns a program. Waits until program terminates
+void spawn_catchoutput(const Arg *, char *, size_t);                  //Spawns a program. Saves program output in buffer with size
+void spawn_greppattern(const Arg *, const char *p, char *b, size_t);  //Spawns a program. Passes output by grep
+int spawn_countlines(const Arg *);                                    //Spawns a program. Returns number of lines in output
+int spawn_readint(const Arg *);                                       //Spawns a program. Expects int as output of program. Returns it.
+int spawn_readint_feedstdin(const Arg *, const char *buf);            //Spawns a program. Feeds it string to stdin. Expects int as output of program. Returns it.
+int spawn_retval(const Arg *);                                        //Spawns a program. Returns the exit value of the program.
 
 void spawn_programs_list(ProgramService *l);
 
@@ -64,8 +65,8 @@ extern const char *updatearchlinuxcmd[];
 extern const char *sysctl_status_ovpn[];
 extern const char *sysctl_start_ovpn[];
 extern const char *stsctl_stop_ovpn[];
-
-extern const char *screenpencmd[];
+extern const char *nmcli_getssids[];
+extern const char *nmcli_getdevstatus[];
 
 // List of programs to be run at startup
 extern ProgramService startup_programs[];

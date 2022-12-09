@@ -40,6 +40,8 @@ const char *updatearchlinuxcmd[]    = {"alacritty", "-e", "yay", "-Syu", NULL};
 const char *sysctl_status_ovpn[]    = {"systemctl", "is-active", "openvpn-client@*", NULL};
 const char *sysctl_start_ovpn[]     = {"sudo", "systemctl", "start", "openvpn-client@client", NULL};
 const char *sysctl_stop_ovpn[]      = {"sudo", "systemctl", "stop", "openvpn-client@*", NULL};
+const char *nmcli_getssids[]        = {"nmcli", "-t", "-f", "active,ssid", "dev", "wifi", NULL};
+const char *nmcli_getdevstatus[]    = {"nmcli", "-t", "-f", "state,type", "dev", NULL};
 
 //Keyboard brightness
 const char *KBdownbrightnesscmd[]   = {"brightnessctl", "-q", "-d='asus::kbd_backlight'", "s", "1-", NULL};
@@ -122,6 +124,43 @@ void spawn_catchoutput (const Arg *arg, char *buffer, size_t size){
   close(p[0]);
 
   return;
+}
+
+void spawn_greppattern(const Arg *arg, const char *pattern, char *buffer, size_t bufsize){
+  int p_arg_grep[2];
+  int p_grep_main[2];
+
+  if (pipe(p_arg_grep) < 0){
+    die("horizonwm: pipe failed on spawn_greppattern(%s, %s)", ((char **)arg->v)[0], pattern);
+  }
+
+  if (fork() == 0){
+    close(1); dup(p_arg_grep[1]); close(p_arg_grep[1]); close(p_arg_grep[0]);
+    if (dpy)
+      close(ConnectionNumber(dpy));
+    setsid();
+    execvp(((char **)arg->v)[0], (char **)arg->v);
+    die("horizonwm: execvp '%s' failed:", ((char **)arg->v)[0]);
+  }
+  close(p_arg_grep[1]);
+
+  if (pipe(p_grep_main) < 0){
+    die("horizonwm: pipe failed on spawn_greppattern(%s, %s)", ((char **)arg->v)[0], pattern);
+  }
+
+  if (fork() == 0){
+    close(0); dup(p_arg_grep[0]); close(p_arg_grep[1]); close(p_arg_grep[0]);
+    close(1); dup(p_grep_main[1]); close(p_grep_main[1]); close(p_grep_main[0]);
+    if (dpy)
+      close(ConnectionNumber(dpy));
+    setsid();
+    execlp("grep", "grep", pattern, NULL);
+    die("horizonwm: execvp '%s' failed:", ((char **)arg->v)[0]);
+  }
+  close(p_grep_main[1]); close(p_arg_grep[0]);
+
+  read(p_grep_main[0], buffer, bufsize);
+  close(p_grep_main[0]);
 }
 
 int spawn_readint(const Arg *arg){
