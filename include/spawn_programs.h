@@ -65,6 +65,8 @@ extern const char *sysctl_status_ovpn[];
 extern const char *sysctl_start_ovpn[];
 extern const char *stsctl_stop_ovpn[];
 
+extern const char *screenpencmd[];
+
 // List of programs to be run at startup
 extern ProgramService startup_programs[];
 

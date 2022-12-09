@@ -34,9 +34,18 @@ BarModule bar_modules[] = {
 
     {openvpn_barmodule,             NULL,                         BAR_MODULE_OPENVPN,           0,                0},
 
+    {wm_mode_barmodule,             NULL,                         BAR_MODULE_WMMODE,            0,                0},
+
     {updates_barmodule,             updates_clicked,              BAR_MODULE_UPDATES,           1,                0},
     {NULL, NULL, 0, 0, 0}
 };
+
+int wm_mode_barmodule(BAR_MODULE_ARGUMENTS){
+  if (wm_mode == WMModeDraw){
+    strcpy(retstring, "");
+  }
+  return 0;
+}
 
 int openvpn_barmodule(BAR_MODULE_ARGUMENTS){
   Arg a;

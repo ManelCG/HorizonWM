@@ -10,6 +10,9 @@
 #include <X11/Xutil.h>
 #include <stdbool.h>
 
+enum {WMModeNormal, WMModeDraw};
+extern int wm_mode;
+
 extern int n_updates_pacman;
 extern int n_updates_aur;
 

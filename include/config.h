@@ -178,6 +178,9 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_m,                       setlayout,                     {.v = &layouts[2]}          },
 	{ MODKEY,                       XK_space,                   setlayout,                     {0}                         },
 
+  { MODKEY|ShiftMask,             XK_m,                       switch_wm_mode,                {0}                         },
+  { MODKEY|ShiftMask,             XK_m,                       drawbars_caller_with_arg,      {0}                         },
+
   //Gaps
 	{ MODKEY|ShiftMask,             XK_plus,                    modgaps,                       {.i = +5}                   },
 	{ MODKEY|ShiftMask,             XK_minus,                   modgaps,                       {.i = -5}                   },
@@ -232,6 +235,10 @@ static const Button buttons[] = {
 	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
 	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
+
+  { ClkDrawmode,          MODKEY,         Button1,        draw_on_screen_mouse, {.i = 1} },
+  { ClkDrawmode,          MODKEY,         Button2,        draw_on_screen_mouse, {.i = 2} },
+  { ClkDrawmode,          MODKEY,         Button3,        draw_on_screen_mouse, {.i = 3} },
 };
 
 #endif //_HORIZONWM_CONFIG_H_

@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-enum {BAR_DEFAULT_MODULE, BAR_MODULE_DATE, BAR_MODULE_KEYBOARDMAPPING, BAR_MODULE_BATTERYSTATUS, BAR_MODULE_BRIGHTNESS, BAR_MODULE_VOLUME, BAR_MODULE_UPDATES, BAR_MODULE_OPENVPN};
+enum {BAR_DEFAULT_MODULE, BAR_MODULE_DATE, BAR_MODULE_KEYBOARDMAPPING, BAR_MODULE_BATTERYSTATUS, BAR_MODULE_BRIGHTNESS, BAR_MODULE_VOLUME, BAR_MODULE_UPDATES, BAR_MODULE_OPENVPN, BAR_MODULE_WMMODE};
 
 #define BAR_MODULE_ARGUMENTS int bufsize, char *retstring, void *args, char *color
 
@@ -15,6 +15,7 @@ int brightness_barmodule(BAR_MODULE_ARGUMENTS);
 int volume_barmodule(BAR_MODULE_ARGUMENTS);
 int updates_barmodule(BAR_MODULE_ARGUMENTS);
 int openvpn_barmodule(BAR_MODULE_ARGUMENTS);
+int wm_mode_barmodule(BAR_MODULE_ARGUMENTS);
 
 //On bar module clicked functions:
 int volume_clicked(int mask, int button);

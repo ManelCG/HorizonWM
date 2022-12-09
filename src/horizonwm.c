@@ -73,7 +73,7 @@ enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
-       ClkClientWin, ClkRootWin, ClkLast, ClkBarModules }; /* clicks */
+       ClkClientWin, ClkRootWin, ClkLast, ClkBarModules, ClkDrawmode }; /* clicks */
 
 //Window resize anchor points
 enum { RszTL, RszT, RszTR, RszR, RszBR, RszB, RszBL, RszL};
@@ -197,6 +197,7 @@ static Monitor *recttomon(int x, int y, int w, int h);
 static void resize(Client *c, int x, int y, int w, int h, int interact);
 static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
+static void draw_on_screen_mouse(const Arg *arg);
 static void restack(Monitor *m);
 static void run(void);
 static void scan(void);
@@ -243,6 +244,7 @@ static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void xinitvisual();
 static void zoom(const Arg *arg);
 static void F11_togglefullscreen_handler();
+static void switch_wm_mode();
 
 /* variables */
 static const char broken[] = "broken";
@@ -250,18 +252,20 @@ static char stext[256];
 static int screen;
 static int sw, sh;           /* X display screen geometry width, height */
 
-int keyboard_mapping;                   //Extern, defined on <global_mutex.h>
-const char *keyboard_mappings[] = {     //Extern, defined on <global_mutex.h>
+int keyboard_mapping;                   //Extern, defined on <global_vars.h>
+const char *keyboard_mappings[] = {     //Extern, defined on <global_vars.h>
   "es", "ru",
   NULL
 };
+
+int wm_mode;                            //Extern defined on <global_vars.h>
 
 bool shall_fetch_updates = true;
 bool checking_updates = false;
 
 //MUTEX
-pthread_mutex_t mutex_drawbar;          //Extern, defined on <global_mutex.h>
-pthread_mutex_t mutex_fetchupdates;     //Extern, defined on <global_mutex.h>
+pthread_mutex_t mutex_drawbar;          //Extern, defined on <global_vars.h>
+pthread_mutex_t mutex_fetchupdates;     //Extern, defined on <global_vars.h>
 
 //BAR
 static int bh;               /* bar height */
@@ -347,6 +351,10 @@ applyrules(Client *c)
 	if (ch.res_name)
 		XFree(ch.res_name);
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
+}
+
+void switch_wm_mode(){
+  wm_mode = wm_mode == WMModeDraw? WMModeNormal : WMModeDraw;
 }
 
 int
@@ -465,6 +473,12 @@ buttonpress(XEvent *e)
 	Monitor *m;
 	XButtonPressedEvent *ev = &e->xbutton;
 
+  //In draw mode, all click functions are ommited and all button presses are considered drawing
+  if (wm_mode == WMModeDraw){
+    click = ClkDrawmode;
+    goto buttonpress_findbutton;
+  }
+
 	click = ClkRootWin;
 	/* focus monitor if necessary */
 	if ((m = wintomon(ev->window)) && m != selmon) {
@@ -540,6 +554,8 @@ buttonpress(XEvent *e)
 		XAllowEvents(dpy, ReplayPointer, CurrentTime);
 		click = ClkClientWin;
 	}
+
+  buttonpress_findbutton:
 	for (i = 0; i < LENGTH(buttons); i++)
 		if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
@@ -1537,6 +1553,35 @@ resizeclient(Client *c, int x, int y, int w, int h)
 	XSync(dpy, False);
 }
 
+void draw_on_screen_mouse(const Arg *arg){
+  Monitor *m;
+	XEvent ev;
+	Time lasttime = 0;
+
+	if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
+		None, cursor[CurResize]->cursor, CurrentTime) != GrabSuccess)
+		return;
+
+	do {
+		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
+		switch(ev.type) {
+		case ConfigureRequest:
+		case Expose:
+		case MapRequest:
+			handler[ev.type](&ev);
+			break;
+		case MotionNotify:
+      if ((ev.xmotion.time - lasttime) <= (1000 / 60))
+        continue;
+      lasttime = ev.xmotion.time;
+
+      break;
+    }
+	} while (ev.type != ButtonRelease);
+
+	XUngrabPointer(dpy, CurrentTime);
+}
+
 void
 resizemouse(const Arg *arg)
 {
@@ -1817,34 +1862,6 @@ resizemouse(const Arg *arg)
       }
 			break;
 		}
-
-    // switch(anchor){
-    //   case RszL:
-    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h/2 + c->bw -1);
-    //     break;
-    //   case RszR:
-    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h/2 + c->bw -1);
-    //     break;
-    //   case RszB:
-    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->h + c->bw - 1);
-    //     break;
-    //   case RszT:
-    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w/2 + c->bw -1, c->bw);
-    //     break;
-    //   case RszBR:
-    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
-    //     break;
-    //   case RszTR:
-    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->bw);
-    //     break;
-    //   case RszBL:
-    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->h + c->bw - 1);
-    //     break;
-    //   case RszTL:
-    //     XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->bw, c->bw);
-    //     break;
-    // }
-
 	} while (ev.type != ButtonRelease);
 
 	XUngrabPointer(dpy, CurrentTime);
@@ -2111,6 +2128,7 @@ setup(void)
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
   bar_separatorwidth = 0;
+  wm_mode = 0;
 	bh = drw->fonts->h + 6 + bar_lobar + bar_hibar;
 	updategeom();
 	/* init atoms */
