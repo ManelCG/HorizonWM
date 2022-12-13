@@ -51,7 +51,7 @@ int wired_connection_barmodule(BAR_MODULE_ARGUMENTS){
 
 
   if (!is_con){
-    strcpy(color, "#FF0000");
+    strcpy(color, COLOR_DISABLED);
     strcpy(retstring, "");
     return -1;
   }
@@ -68,7 +68,7 @@ int wireless_barmodule(BAR_MODULE_ARGUMENTS){
   pthread_mutex_unlock(&mutex_connection_checker);
 
   if (!is_con){
-    strcpy(color, "#FF0000");
+    strcpy(color, COLOR_DISABLED);
     strcpy(retstring, "");
     return -1;
   }
@@ -93,7 +93,7 @@ int openvpn_barmodule(BAR_MODULE_ARGUMENTS){
 
   if (strncmp(ovpn_status, "active", 6) == 0){
     snprintf(retstring, bufsize, " VPN");
-    strcpy(color, "#00FF00");
+    strcpy(color, COLOR_ENABLED);
   }
 
   return 0;
@@ -119,11 +119,11 @@ int updates_barmodule(BAR_MODULE_ARGUMENTS){
   }
 
   if (checking_updates_local){
-    strcpy(color, "#00FF00");
+    strcpy(color, COLOR_ENABLED);
   } else if (shall_fetch_updates){
-    strcpy(color, "#FFFF00");
+    strcpy(color, COLOR_WARNING);
   } else {
-    strcpy(color, "#FF0000");
+    strcpy(color, COLOR_DISABLED);
   }
 
   if (n_updates_pacman_local + n_updates_aur_local > old_updates){
@@ -191,7 +191,7 @@ int volume_barmodule(BAR_MODULE_ARGUMENTS){
   spawn_catchoutput(&getmute_arg, buffer_pamixeroutput, 8);
   if (buffer_pamixeroutput[0] == 't'){ //If volume is muted
     icon = "";
-    strcpy(color, "#ff0000");
+    strcpy(color, COLOR_DISABLED);
   } else {
     if (percent >= 70){
       icon = "";
@@ -342,10 +342,10 @@ int battery_status_barmodule(BAR_MODULE_ARGUMENTS){
   }
 
   if (is_charging){
-    strcpy(color, "#00ff00");
+    strcpy(color, COLOR_ENABLED);
     battery_status = BATTERY_HEALTHY;         //This is just used so if you unplug charger, you get a warning of battery level
   } else if (battery_status >= BATTERY_LOW){
-    strcpy(color, "#ff0000");
+    strcpy(color, COLOR_DISABLED);
   }
 
   ////Show progressbar on battery

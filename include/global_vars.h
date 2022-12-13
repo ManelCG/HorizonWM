@@ -10,6 +10,10 @@
 #include <X11/Xutil.h>
 #include <stdbool.h>
 
+#define COLOR_ENABLED   "#6bf799"
+#define COLOR_DISABLED  "#bb0000"
+#define COLOR_WARNING   "#e0df40"
+
 enum {WMModeNormal, WMModeDraw};
 extern int wm_mode;
 
