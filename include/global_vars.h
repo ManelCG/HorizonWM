@@ -11,8 +11,8 @@
 #include <stdbool.h>
 
 #define COLOR_ENABLED   "#6bf799"
-#define COLOR_DISABLED  "#bb0000"
-#define COLOR_WARNING   "#e0df40"
+#define COLOR_DISABLED  "#Ff0367"
+#define COLOR_WARNING   "#F7ec4c"
 
 enum {WMModeNormal, WMModeDraw};
 extern int wm_mode;
