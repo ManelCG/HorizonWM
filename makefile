@@ -1,6 +1,6 @@
 BASENAME = horizonwm
 WMNAME = HorizonWM
-VERSION = "0.1.0"
+VERSION = "1.0.0"
 
 SDIR = src
 
@@ -18,17 +18,11 @@ debug: BDIR = build
 release: CC = $(CCCMD) -DVERSION=\"$(VERSION)\"
 release: BDIR = build
 
-windows: CC = $(CCCMD) -DVERSION=\"$(VERSION)\" -mwindows
-windows: BDIR = build
-windows_GTKENV: BDIR = build
-
 install: CC = $(CCCMD) -DMAKE_INSTALL -DVERSION=\"$(VERSION)\"
 install: PROGDIR = /usr/lib/$(BASENAME)
 install: BDIR = $(PROGDIR)/bin
 
 archlinux: CC = $(CCCMD) -DMAKE_INSTALL -DVERSION=\"$(VERSION)\"
-
-locale: LOCALEDIR = locale
 
 ODIR=.obj/linux
 DODIR=.obj/debug
@@ -87,16 +81,6 @@ archlinux: $(OBJ) $(OBJ_GUI)
 	cp LICENSE $(BDIR)/usr/lib/$(BASENAME)/
 	#cp assets/$(BASENAME).desktop $(BDIR)/usr/share/applications/
 	#cp assets/app_icon/256.png $(BDIR)/usr/share/pixmaps/$(BASENAME).png
-
-locale: $(LOCALEDIR)/es/LC_MESSAGES/$(LOCALENAME).mo $(LOCALEDIR)/ru/LC_MESSAGES/$(LOCALENAME).mo $(LOCALEDIR)/ca/LC_MESSAGES/$(LOCALENAME).mo
-
-$(LOCALEDIR)/%/LC_MESSAGES/$(LOCALENAME).mo: $(LOCALEDIR)/%/$(LOCALENAME).po
-	msgfmt --output-file=$(LOCALEDIR)/$*/LC_MESSAGES/$(LOCALENAME).mo $(LOCALEDIR)/$*/$(LOCALENAME).po
-$(LOCALEDIR)/%/$(LOCALENAME).po: $(LOCALEDIR)/$(LOCALENAME).pot
-	msgmerge --update $(LOCALEDIR)/$*/$(LOCALENAME).po $(LOCALEDIR)/$(LOCALENAME).pot
-	mkdir -p $(LOCALEDIR)/$*/LC_MESSAGES
-$(LOCALEDIR)/$(LOCALENAME).pot: $(SDIR)/*
-	xgettext --keyword=_ --language=C --from-code=UTF-8 --add-comments --sort-output -o $(LOCALEDIR)/$(LOCALENAME).pot $(SDIR)/*.c
 
 .PHONY: clean
 clean:
