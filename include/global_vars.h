@@ -17,6 +17,12 @@
 enum {WMModeNormal, WMModeDraw};
 extern int wm_mode;
 
+enum {MPDStopped, MPDPlaying, MPDPaused};
+extern int mpd_status;
+extern char mpd_song[128];
+extern char mpd_songduration[64];
+extern char mpd_percentage[8];
+
 extern int n_updates_pacman;
 extern int n_updates_aur;
 
@@ -31,6 +37,7 @@ extern const char *keyboard_mappings[];
 
 extern bool shall_fetch_updates;
 
+extern pthread_mutex_t mutex_mpc;
 extern pthread_mutex_t mutex_drawbar;
 extern pthread_mutex_t mutex_fetchupdates;
 extern pthread_mutex_t mutex_connection_checker;

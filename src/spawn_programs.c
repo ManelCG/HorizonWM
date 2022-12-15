@@ -126,7 +126,7 @@ void spawn_catchoutput (const Arg *arg, char *buffer, size_t size){
   return;
 }
 
-void spawn_greppattern(const Arg *arg, const char *pattern, char *buffer, size_t bufsize){
+void spawn_greppattern(const Arg *arg, const char *flags, const char *pattern, char *buffer, size_t bufsize){
   int p_arg_grep[2];
   int p_grep_main[2];
 
@@ -154,7 +154,11 @@ void spawn_greppattern(const Arg *arg, const char *pattern, char *buffer, size_t
     if (dpy)
       close(ConnectionNumber(dpy));
     setsid();
-    execlp("grep", "grep", pattern, NULL);
+    if (flags != NULL){
+      execlp("grep", "grep", flags, pattern, NULL);
+    } else {
+      execlp("grep", "grep", pattern, NULL);
+    }
     die("horizonwm: execvp '%s' failed:", ((char **)arg->v)[0]);
   }
   close(p_grep_main[1]); close(p_arg_grep[0]);

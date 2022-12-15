@@ -20,7 +20,7 @@ void spawn(const Arg *arg);                                           //Spawns a
 unsigned int spawn_pid(const Arg *arg);                               //Spawns a program, returns its pid
 void spawn_waitpid(const Arg *arg);                                   //Spawns a program. Waits until program terminates
 void spawn_catchoutput(const Arg *, char *, size_t);                  //Spawns a program. Saves program output in buffer with size
-void spawn_greppattern(const Arg *, const char *p, char *b, size_t);  //Spawns a program. Passes output by grep
+void spawn_greppattern(const Arg *, const char *flags, const char *p, char *b, size_t);  //Spawns a program. Passes output by grep
 int spawn_countlines(const Arg *);                                    //Spawns a program. Returns number of lines in output
 int spawn_readint(const Arg *);                                       //Spawns a program. Expects int as output of program. Returns it.
 int spawn_readint_feedstdin(const Arg *, const char *buf);            //Spawns a program. Feeds it string to stdin. Expects int as output of program. Returns it.

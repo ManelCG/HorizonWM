@@ -39,6 +39,14 @@ BarModule bar_modules[] = {
     {wm_mode_barmodule,             NULL,                         BAR_MODULE_WMMODE,            0,                0},
 
     {updates_barmodule,             updates_clicked,              BAR_MODULE_UPDATES,           1,                0},
+
+    //MPD
+    {mpd_next_barmodule,            NULL,                         BAR_MODULE_MPC_NEXT,          0,                0},
+    {mpd_stop_barmodule,            NULL,                         BAR_MODULE_MPC_STOP,          0,                0},
+    {mpd_playpause_barmodule,       NULL,                         BAR_MODULE_MPC_PLAYPAUSE,     0,                0},
+    {mpd_prev_barmodule,            NULL,                         BAR_MODULE_MPC_PREV,          0,                0},
+    {mpd_status_barmodule,          NULL,                         BAR_MODULE_MPC_STATUS,        0,                0},
+
     {NULL, NULL, 0, 0, 0}
 };
 
@@ -74,6 +82,100 @@ int wireless_barmodule(BAR_MODULE_ARGUMENTS){
   }
 
   snprintf(retstring, bufsize, " %s", wifi_ssid);
+  return 0;
+}
+
+int mpd_prev_barmodule(BAR_MODULE_ARGUMENTS){
+  int localstatus;
+
+  pthread_mutex_lock(&mutex_mpc);
+  localstatus = mpd_status;
+  pthread_mutex_unlock(&mutex_mpc);
+
+  if (localstatus == MPDPlaying || localstatus == MPDPaused){
+    strcpy(retstring, "");
+  } else if (localstatus == MPDStopped){
+    return -1;
+  }
+
+  return 0;
+}
+
+int mpd_playpause_barmodule(BAR_MODULE_ARGUMENTS){
+  int localstatus;
+
+  pthread_mutex_lock(&mutex_mpc);
+  localstatus = mpd_status;
+  pthread_mutex_unlock(&mutex_mpc);
+
+  if (localstatus == MPDPlaying){
+    strcpy(retstring, "");
+  } else if (localstatus == MPDPaused){
+    strcpy(retstring, "");
+  } else if (localstatus == MPDStopped){
+    return -1;
+  }
+
+  return 0;
+}
+
+int mpd_stop_barmodule(BAR_MODULE_ARGUMENTS){
+  int localstatus;
+
+  pthread_mutex_lock(&mutex_mpc);
+  localstatus = mpd_status;
+  pthread_mutex_unlock(&mutex_mpc);
+
+  if (localstatus == MPDPlaying || localstatus == MPDPaused){
+    strcpy(retstring, "");
+  } else if (localstatus == MPDStopped){
+    return -1;
+  }
+
+  return 0;
+}
+
+int mpd_next_barmodule(BAR_MODULE_ARGUMENTS){
+  int localstatus;
+
+  pthread_mutex_lock(&mutex_mpc);
+  localstatus = mpd_status;
+  pthread_mutex_unlock(&mutex_mpc);
+
+  if (localstatus == MPDPlaying || localstatus == MPDPaused){
+    strcpy(retstring, "");
+  } else if (localstatus == MPDStopped){
+    return -1;
+  }
+
+  return 0;
+}
+
+
+int mpd_status_barmodule(BAR_MODULE_ARGUMENTS){
+  int localstatus;
+  char localsong[128];
+  char localperc[8];
+  char localdur[64];
+  char progressbar[128];
+
+  pthread_mutex_lock(&mutex_mpc);
+  localstatus = mpd_status;
+  strcpy(localsong, mpd_song);
+  strcpy(localperc, mpd_percentage);
+  strcpy(localdur, mpd_songduration);
+  pthread_mutex_unlock(&mutex_mpc);
+
+  int progress = atoi(localperc);
+
+  percentage_to_progressbar(progressbar, progress, 20);
+
+  if (mpd_status == MPDPlaying){
+    snprintf(retstring, bufsize, "%s   %s   %s", localsong, progressbar, localdur);
+  } else if (mpd_status == MPDPaused){
+    snprintf(retstring, bufsize, "%s   %s   %s", localsong, progressbar, localdur);
+  }
+
   return 0;
 }
 

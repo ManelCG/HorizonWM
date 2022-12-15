@@ -85,6 +85,9 @@ int percentage_to_progressbar(char *buffer, int percentage, int len){
     return -1;
   }
 
+  //Empty buffer
+  buffer[0] = '\0';
+
   int current_position = (len * percentage) / 100;
   for (int i = 0; i < current_position; i++){
     strcat(buffer, PROGRESSBAR_FULL_CHAR);

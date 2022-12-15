@@ -280,10 +280,16 @@ bool is_ethernet_connected;             //Extern defined on <global_vars.h>
 bool is_wifi_connected;                 //Extern defined on <global_vars.h>
 char wifi_ssid[128];                    //Extern defined on <global_vars.h>
 
+int mpd_status = MPDStopped;            //Extern defined on <global_vars.h>
+char mpd_song[128];                     //Extern defined on <global_vars.h>
+char mpd_songduration[64];              //Extern defined on <global_vars.h>
+char mpd_percentage[8];                 //Extern defined on <global_vars.h>
+
 bool shall_fetch_updates = true;
 bool checking_updates = false;
 
 //MUTEX
+pthread_mutex_t mutex_mpc;                //Extern, defined on <global_vars.h>
 pthread_mutex_t mutex_drawbar;            //Extern, defined on <global_vars.h>
 pthread_mutex_t mutex_fetchupdates;       //Extern, defined on <global_vars.h>
 pthread_mutex_t mutex_connection_checker; //Extern, defined on <global_vars.h>
@@ -329,6 +335,8 @@ static Colormap cmap;
 
 static int window_gap_inner;
 static int window_gap_outter;
+
+static pthread_t mpc_loop_pthread_t;
 static pthread_t bar_loop_pthread_t;
 static pthread_t updates_checker_pthread_t;
 static pthread_t connection_checker_pthread_t;
@@ -1058,7 +1066,7 @@ void *connection_checker(void *args){
 
   for (;;){
     //Get ethernet status
-    spawn_greppattern(&arg_eth, pattern_eth, buffer, 127);
+    spawn_greppattern(&arg_eth, NULL, pattern_eth, buffer, 127);
     tok = strchr(buffer, '\n');
     if (tok != NULL){
       *tok = '\0';
@@ -1070,7 +1078,7 @@ void *connection_checker(void *args){
     }
 
     //Get wifi status
-    spawn_greppattern(&arg_wifi, pattern_wifi, buffer, 127);
+    spawn_greppattern(&arg_wifi, NULL, pattern_wifi, buffer, 127);
     if (strcmp(buffer, "") == 0 || strncmp(buffer, "yes:", 4) != 0){
       is_w_con = false;
     } else {
@@ -1090,6 +1098,82 @@ void *connection_checker(void *args){
     sleep(1);
     sleep(5);
   }
+}
+
+void setmpcstatus(){
+  char buffer[64];
+  char durbuffer[64];
+  char songbuffer[128];
+  char percbuffer[8];
+  char *tok;
+  Arg arg;
+
+  const char *mpc_statuscmd[] = {"mpc", "status", NULL};
+  const char *mpc_currentcmd[] = {"mpc", "current", NULL};
+
+  int status_local = MPDStopped;
+
+
+  arg.v = mpc_statuscmd;
+
+  buffer[0] = '\0';
+  spawn_greppattern(&arg, NULL, "^\\[playing\\].*#[0-9]*/[0-9]*.*([0-9]*%)", buffer, sizeof(buffer)-1);
+  if (strlen(buffer) > 0){
+    status_local = MPDPlaying;
+  } else {
+    buffer[0] = '\0';
+    spawn_greppattern(&arg, NULL, "^\\[paused\\].*#[0-9]*/[0-9]*.*([0-9]*%)", buffer, sizeof(buffer)-1);
+    if (strlen(buffer) > 0){
+      status_local = MPDPaused;
+    }
+  }
+
+  if (status_local == MPDPlaying || MPDPaused){
+    durbuffer[0] = '\0';
+    spawn_greppattern(&arg, "-Po", "(?<= )(?<!#)([0-9]+:)*[0-9]+/([0-9]+:)*[0-9]+ ", durbuffer, sizeof(durbuffer)-1);
+    if ((tok = strchr(durbuffer, '\n'))){
+      *tok = '\0';
+    }
+    if ((tok = strchr(durbuffer, ' '))){
+      *tok = '\0';
+    }
+
+    percbuffer[0] = '\0';
+    spawn_greppattern(&arg, "-Po", "(?<=\\()[0-9]+(?=%\\))", percbuffer, sizeof(durbuffer)-1);
+    if ((tok = strchr(percbuffer, '\n'))){
+      *tok = '\0';
+    }
+
+    arg.v = mpc_currentcmd;
+    spawn_catchoutput(&arg, songbuffer, sizeof(songbuffer)-1);
+    if ((tok = strchr(songbuffer, '\n'))){
+      *tok = '\0';
+    }
+
+    pthread_mutex_lock(&mutex_mpc);
+    mpd_status = status_local;
+    strcpy(mpd_song, songbuffer);
+    strcpy(mpd_songduration, durbuffer);
+    strcpy(mpd_percentage, percbuffer);
+    pthread_mutex_unlock(&mutex_mpc);
+  } else {
+    pthread_mutex_lock(&mutex_mpc);
+    mpd_status = status_local;
+    mpd_song[0] = '\0';
+    mpd_songduration[0] = '\0';
+    mpd_percentage[0] = '\0';
+    pthread_mutex_unlock(&mutex_mpc);
+  }
+}
+
+void *mpc_loop(void *args){
+  for (;;){
+    setmpcstatus();
+
+    sleep(1);
+    sleep(1);
+  }
+  return NULL;
 }
 
 void *bar_loop(void *args){
@@ -2268,6 +2352,7 @@ setup(void)
   }
 
   //Init mutex
+  pthread_mutex_init(&mutex_mpc, NULL);
   pthread_mutex_init(&mutex_drawbar, NULL);
   pthread_mutex_init(&mutex_fetchupdates, NULL);
   pthread_mutex_init(&mutex_connection_checker, NULL);
@@ -2314,6 +2399,7 @@ setup(void)
 	/* init bars */
 	updatebars();
 	updatestatus();
+  pthread_create(&mpc_loop_pthread_t, NULL, mpc_loop, NULL);
   pthread_create(&bar_loop_pthread_t, NULL, bar_loop, (void *) &bar_sleeptime);
   pthread_create(&updates_checker_pthread_t, NULL, updates_checker, NULL);
   pthread_create(&connection_checker_pthread_t, NULL, connection_checker, NULL);
