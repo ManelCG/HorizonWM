@@ -14,6 +14,8 @@ static const unsigned int def_gap_i = 10;       //Default inner gap
 static const unsigned int def_gap_o = 20;       //Default outter gap
 static const unsigned int border_alpha = 0xff;  //Border opacity (opaque)
 
+static const int swallowfloating    = 1;        //Swallow floating windows?
+
 //Bar
 static const int showbar            = 1;       //0 means no bar
 static const int bar_lobar          = 3;       //Thickness of bar color details (bottom)
@@ -78,11 +80,16 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class                instance    title       tags mask     isfloating   monitor */
-	{ "Gimp",               NULL,       NULL,       0,            1,           -1 },
-	{ "Firefox",            NULL,       NULL,       1 << 8,       0,           -1 },
-  { "Clavis",             NULL,       NULL,       0,            1,           -1 },
-  { "gnome-calculator",   NULL,       NULL,       0,            1,           -1 },
+	/* class                instance    title       tags mask     isfloating   isterminal noswallow monitor */
+	{ "Gimp",               NULL,       NULL,       0,            1,           0,         0,        -1 },
+	{ "Firefox",            NULL,       NULL,       1 << 8,       0,           0,         0,        -1 },
+  { "Clavis",             NULL,       NULL,       0,            1,           0,         0,        -1 },
+  { "gnome-calculator",   NULL,       NULL,       0,            1,           0,         0,        -1 },
+  { "Alacritty",          NULL,       NULL,       0,            0,           1,         0,        -1 },
+  { "St",                 NULL,       NULL,       0,            0,           1,         0,        -1 },
+  { "Kitty",              NULL,       NULL,       0,            0,           1,         0,        -1 },
+  { "Konsole",            NULL,       NULL,       0,            0,           1,         0,        -1 },
+  { NULL,                 NULL,       "Event Tester",0,         0,           0,         1,        -1 },
 };
 
 /* layout(s) */
