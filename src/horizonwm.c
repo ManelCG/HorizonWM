@@ -920,6 +920,7 @@ drawbar(Monitor *m)
     drw_setscheme(drw, scheme[SchemeNorm]);
     module.function(256, buffer, NULL, module_barcolor);
 
+    //Padding only if ID's don't match (If they match, its the same module)
     if (i != 0 && bar_modules[i].id != bar_modules[i-1].id){
       module_width = TEXTW(buffer) - lrpad + side_padding;
     } else {
@@ -935,8 +936,14 @@ drawbar(Monitor *m)
 
 		  scheme_color = drw_scm_create(drw, (const char **) module_scheme, module_alphas, 3);
       drw_setscheme(drw, scheme_color);
-      drw_rect(drw, m->ww - (module_width + modules_textwidth), 0,              module_width - side_padding, bar_hibar, 1, 1);
-      drw_rect(drw, m->ww - (module_width + modules_textwidth), bh - bar_lobar, module_width - side_padding, bar_lobar, 1, 1);
+
+      if (i != 0 && bar_modules[i].id != bar_modules[i-1].id){
+        drw_rect(drw, m->ww - (module_width + modules_textwidth), 0,              module_width - side_padding, bar_hibar, 1, 1);
+        drw_rect(drw, m->ww - (module_width + modules_textwidth), bh - bar_lobar, module_width - side_padding, bar_lobar, 1, 1);
+      } else {
+        drw_rect(drw, m->ww - (module_width + modules_textwidth), 0,              module_width,                bar_hibar, 1, 1);
+        drw_rect(drw, m->ww - (module_width + modules_textwidth), bh - bar_lobar, module_width,                bar_lobar, 1, 1);
+      }
 
       free(scheme_color);
       drw_setscheme(drw, scheme[SchemeNorm]);
