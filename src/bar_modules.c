@@ -16,6 +16,8 @@
 #define BATTERY_LOW 1
 #define BATTERY_CRITICAL 2
 
+void setmpcstatus(const Arg *arg_unused); //In horizonwm, static
+
 int battery_status = 0;
 
 int n_updates_pacman = 0;
@@ -41,11 +43,11 @@ BarModule bar_modules[] = {
     {updates_barmodule,             updates_clicked,              BAR_MODULE_UPDATES,           1,                0},
 
     //MPD
-    {mpd_next_barmodule,            NULL,                         BAR_MODULE_MPC,               0,                0},
-    {mpd_stop_barmodule,            NULL,                         BAR_MODULE_MPC,               0,                0},
-    {mpd_playpause_barmodule,       NULL,                         BAR_MODULE_MPC,               0,                0},
-    {mpd_prev_barmodule,            NULL,                         BAR_MODULE_MPC,               0,                0},
-    {mpd_status_barmodule,          NULL,                         BAR_MODULE_MPC,               0,                0},
+    {mpd_next_barmodule,            mpd_next_clicked,             BAR_MODULE_MPC,               0,                0},
+    {mpd_stop_barmodule,            mpd_stop_clicked,             BAR_MODULE_MPC,               0,                0},
+    {mpd_playpause_barmodule,       mpd_playpause_clicked,        BAR_MODULE_MPC,               0,                0},
+    {mpd_prev_barmodule,            mpd_prev_clicked,             BAR_MODULE_MPC,               0,                0},
+    {mpd_status_barmodule,          mpd_status_clicked,           BAR_MODULE_MPC,               0,                0},
 
     {NULL, NULL, 0, 0, 0}
 };
@@ -253,6 +255,65 @@ int updates_clicked(int mask, int button){
       return 0;
     case 3:
       toggle_update_checks(NULL);
+      return 0;
+    default:
+      return -1;
+  }
+}
+
+int mpd_status_clicked(int mask, int button){
+  Arg a;
+  switch(button){
+    case 1:
+      //Do
+      return 0;
+    default:
+      return -1;
+  }
+}
+int mpd_prev_clicked(int mask, int button){
+  Arg a;
+  switch(button){
+    case 1:
+      a.v = mpc_prev;
+      spawn_waitpid(&a);
+      setmpcstatus(NULL);
+      return 0;
+    default:
+      return -1;
+  }
+}
+int mpd_playpause_clicked(int mask, int button){
+  Arg a;
+  switch(button){
+    case 1:
+      a.v = mpc_toggle;
+      spawn_waitpid(&a);
+      setmpcstatus(NULL);
+      return 0;
+    default:
+      return -1;
+  }
+}
+int mpd_stop_clicked(int mask, int button){
+  Arg a;
+  switch(button){
+    case 1:
+      a.v = mpc_stop;
+      spawn_waitpid(&a);
+      setmpcstatus(NULL);
+      return 0;
+    default:
+      return -1;
+  }
+}
+int mpd_next_clicked(int mask, int button){
+  Arg a;
+  switch(button){
+    case 1:
+      a.v = mpc_next;
+      spawn_waitpid(&a);
+      setmpcstatus(NULL);
       return 0;
     default:
       return -1;
