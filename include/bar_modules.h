@@ -33,6 +33,13 @@ int keyboard_mapping_clicked(int mask, int button);
 int updates_clicked(int mask, int button);
 int brightness_clicked(int mask, int button);
 
+//MPD Clicked:
+int mpd_status_clicked(int mask, int button);
+int mpd_prev_clicked(int mask, int button);
+int mpd_playpause_clicked(int mask, int button);
+int mpd_stop_clicked(int mask, int button);
+int mpd_next_clicked(int mask, int button);
+
 typedef int  (*BarModuleFunction)(BAR_MODULE_ARGUMENTS);
 typedef int (*BarModuleButtonFunction)(int, int);
 

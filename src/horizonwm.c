@@ -256,6 +256,7 @@ static void xinitvisual();
 static void zoom(const Arg *arg);
 static void F11_togglefullscreen_handler();
 static void switch_wm_mode();
+void setmpcstatus(const Arg *arg_unused);
 
 static pid_t getparentprocess(pid_t p);
 static int isdescprocess(pid_t p, pid_t c);
@@ -1120,7 +1121,7 @@ void *connection_checker(void *args){
   }
 }
 
-void setmpcstatus(){
+void setmpcstatus(const Arg *arg_unused){
   char buffer[64];
   char durbuffer[64];
   char songbuffer[128];
@@ -1188,7 +1189,7 @@ void setmpcstatus(){
 
 void *mpc_loop(void *args){
   for (;;){
-    setmpcstatus();
+    setmpcstatus(NULL);
 
     sleep(1);
     sleep(1);

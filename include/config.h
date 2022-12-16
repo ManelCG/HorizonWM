@@ -209,6 +209,21 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_comma,                   tagmon,                        {.i = -1 }                  },
 	{ MODKEY|ShiftMask,             XK_period,                  tagmon,                        {.i = +1 }                  },
 
+  //MPC CONTROLS
+	{ MODKEY,                       XK_KP_Up,                   spawn,                         {.v = mpc_volumeup }        },
+	{ MODKEY,                       XK_KP_Down,                 spawn,                         {.v = mpc_volumedown }      },
+	{ MODKEY,                       XK_KP_Begin,                spawn_waitpid,                 {.v = mpc_toggle }          },
+	{ MODKEY,                       XK_KP_Left,                 spawn_waitpid,                 {.v = mpc_prev }            },
+	{ MODKEY,                       XK_KP_Right,                spawn_waitpid,                 {.v = mpc_next }            },
+
+  { MODKEY,                       XK_KP_Begin,                setmpcstatus,                  {0}                         },
+  { MODKEY,                       XK_KP_Left,                 setmpcstatus,                  {0}                         },
+  { MODKEY,                       XK_KP_Right,                setmpcstatus,                  {0}                         },
+
+  { MODKEY,                       XK_KP_Begin,                drawbars_caller_with_arg,      {0}                         },
+  { MODKEY,                       XK_KP_Left,                 drawbars_caller_with_arg,      {0}                         },
+  { MODKEY,                       XK_KP_Right,                drawbars_caller_with_arg,      {0}                         },
+
   //Keyboard mappings
   { ControlMask,                  XK_Menu,                    switch_keyboard_mapping,       {0}                         },
   { ControlMask,                  XK_Menu,                    drawbars_caller_with_arg,      {0}                         },

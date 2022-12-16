@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 const char *browsercmd[]            = { "brave", NULL };
 const char *browser_private_cmd[]   = { "brave", "--incognito",  NULL };
@@ -42,6 +43,14 @@ const char *sysctl_start_ovpn[]     = {"sudo", "systemctl", "start", "openvpn-cl
 const char *sysctl_stop_ovpn[]      = {"sudo", "systemctl", "stop", "openvpn-client@*", NULL};
 const char *nmcli_getssids[]        = {"nmcli", "-t", "-f", "active,ssid", "dev", "wifi", NULL};
 const char *nmcli_getdevstatus[]    = {"nmcli", "-t", "-f", "state,type", "dev", NULL};
+
+//Mpc commands
+const char *mpc_toggle[]            = {"mpc", "-q", "toggle",       NULL};
+const char *mpc_prev[]              = {"mpc", "-q", "cdprev",       NULL};
+const char *mpc_stop[]              = {"mpc", "-q", "stop",         NULL};
+const char *mpc_next[]              = {"mpc", "-q", "next",         NULL};
+const char *mpc_volumeup[]          = {"mpc", "-q", "volume", "+5", NULL};
+const char *mpc_volumedown[]        = {"mpc", "-q", "volume", "-5", NULL};
 
 //Keyboard brightness
 const char *KBdownbrightnesscmd[]   = {"brightnessctl", "-q", "-d='asus::kbd_backlight'", "s", "1-", NULL};
@@ -103,6 +112,22 @@ int spawn_retval(const Arg *arg){
 
   waitpid(pid, &retval, 0);
   return retval;
+}
+
+void spawn_devnull(const Arg *arg){
+  if (fork() == 0) {
+    close(1);
+    open("/dev/null", O_WRONLY);
+
+    close(2);
+    dup(0);
+
+    if (dpy)
+      close(ConnectionNumber(dpy));
+    setsid();
+    execvp(((char **)arg->v)[0], (char **)arg->v);
+    die("horizonwm: execvp '%s' failed:", ((char **)arg->v)[0]);
+  }
 }
 
 void spawn_catchoutput (const Arg *arg, char *buffer, size_t size){

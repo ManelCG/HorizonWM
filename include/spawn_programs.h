@@ -20,6 +20,7 @@ void spawn(const Arg *arg);                                           //Spawns a
 unsigned int spawn_pid(const Arg *arg);                               //Spawns a program, returns its pid
 void spawn_waitpid(const Arg *arg);                                   //Spawns a program. Waits until program terminates
 void spawn_catchoutput(const Arg *, char *, size_t);                  //Spawns a program. Saves program output in buffer with size
+void spawn_devnull(const Arg *arg);                                   //Spawns a program. Feeds output to /dev/null
 void spawn_greppattern(const Arg *, const char *flags, const char *p, char *b, size_t);  //Spawns a program. Passes output by grep
 int spawn_countlines(const Arg *);                                    //Spawns a program. Returns number of lines in output
 int spawn_readint(const Arg *);                                       //Spawns a program. Expects int as output of program. Returns it.
@@ -67,6 +68,14 @@ extern const char *sysctl_start_ovpn[];
 extern const char *stsctl_stop_ovpn[];
 extern const char *nmcli_getssids[];
 extern const char *nmcli_getdevstatus[];
+
+//Mpd commands
+extern const char *mpc_toggle[];
+extern const char *mpc_prev[];
+extern const char *mpc_stop[];
+extern const char *mpc_next[];
+extern const char *mpc_volumeup[];
+extern const char *mpc_volumedown[];
 
 // List of programs to be run at startup
 extern ProgramService startup_programs[];
