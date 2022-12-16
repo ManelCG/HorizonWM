@@ -922,7 +922,7 @@ drawbar(Monitor *m)
     module.function(256, buffer, NULL, module_barcolor);
 
     //Padding only if ID's don't match (If they match, its the same module)
-    if (i != 0 && bar_modules[i].id != bar_modules[i-1].id){
+    if (i == 0 || (i != 0 && bar_modules[i].id != bar_modules[i-1].id)){
       module_width = TEXTW(buffer) - lrpad + side_padding;
     } else {
       module_width = TEXTW(buffer) - lrpad;
