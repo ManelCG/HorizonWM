@@ -605,6 +605,9 @@ buttonpress(XEvent *e)
       //Check which module was clicked
 
       for (j = 0; j < nummodules; j++){
+        if (bar_modules[j].width == 0){
+          continue;
+        }
         modules_width_progress += bar_modules[j].width;
         if (ev->x > m->ww - modules_width_progress){  //Module number j was clicked
           module = bar_modules[j];
@@ -969,6 +972,8 @@ drawbar(Monitor *m)
         bar_modules[i].width = module_width;
         modules_textwidth += module.width;
       }
+    } else {  //If text is empty the width is 0
+      bar_modules[i].width = 0;
     }
 
     i++;
