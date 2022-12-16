@@ -920,7 +920,12 @@ drawbar(Monitor *m)
     drw_setscheme(drw, scheme[SchemeNorm]);
     module.function(256, buffer, NULL, module_barcolor);
 
-    module_width = TEXTW(buffer) - lrpad + side_padding;
+    if (i != 0 && bar_modules[i].id != bar_modules[i-1].id){
+      module_width = TEXTW(buffer) - lrpad + side_padding;
+    } else {
+      module_width = TEXTW(buffer) - lrpad;
+    }
+
     drw_text(drw, m->ww - (module_width + modules_textwidth), bar_hibar, module_width, bh - (bar_lobar + bar_hibar), 0, buffer, 0); //Draw module text
 
     if (module_barcolor[0] != '\0'){
@@ -939,14 +944,22 @@ drawbar(Monitor *m)
 
     //Offset next drawing position to the left
     if (strcmp(buffer, "") != 0){
-      module.width = module_width + side_padding; //3px padding on the left
-      bar_modules[i].width = module_width + side_padding;
-      modules_textwidth += module.width;
 
-      //Draw vertical separators between modules
-      if (bar_modules[i+1].function != NULL){
-        drw_rect(drw, m->ww - (modules_textwidth + bar_separatorwidth), 0, bar_separatorwidth, bh, 1, 0);
-        modules_textwidth += bar_separatorwidth;
+      //Different ID = different modules
+      if (bar_modules[i].id != bar_modules[i+1].id){
+        module.width = module_width + side_padding; //3px padding on the left
+        bar_modules[i].width = module_width + side_padding;
+        modules_textwidth += module.width;
+
+        //Draw vertical separators between modules
+        if (bar_modules[i+1].function != NULL){
+          drw_rect(drw, m->ww - (modules_textwidth + bar_separatorwidth), 0, bar_separatorwidth, bh, 1, 0);
+          modules_textwidth += bar_separatorwidth;
+        }
+      } else { //Same ID = Same module but separated with different functions
+        module.width = module_width; //No padding
+        bar_modules[i].width = module_width;
+        modules_textwidth += module.width;
       }
     }
 
