@@ -160,7 +160,6 @@ int mpd_next_barmodule(BAR_MODULE_ARGUMENTS){
 
 
 int mpd_status_barmodule(BAR_MODULE_ARGUMENTS){
-  int localstatus;
   char localsong[128];
   char localperc[8];
   char localdur[64];
@@ -262,7 +261,6 @@ int updates_clicked(int mask, int button){
 }
 
 int mpd_status_clicked(int mask, int button){
-  Arg a;
   char *buffer;
   char songname[128];
   char buffer_title[256];

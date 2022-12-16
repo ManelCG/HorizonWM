@@ -68,7 +68,6 @@ char *ncmpcpp_get_current_song_lyrics(char *ret_songname, size_t retsize){
   char buffer_filename[1024];
   int fd;
   size_t bufsize = 128;
-  char c;
   int ptr;
   char *filebuffer;
 

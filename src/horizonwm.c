@@ -1773,7 +1773,7 @@ resizeclient(Client *c, int x, int y, int w, int h)
 }
 
 void draw_on_screen_mouse(const Arg *arg){
-  Monitor *m;
+  // Monitor *m;
 	XEvent ev;
 	Time lasttime = 0;
 
