@@ -160,6 +160,7 @@ int mpd_next_barmodule(BAR_MODULE_ARGUMENTS){
 
 
 int mpd_status_barmodule(BAR_MODULE_ARGUMENTS){
+  int localstatus;
   char localsong[128];
   char localperc[8];
   char localdur[64];
@@ -176,7 +177,7 @@ int mpd_status_barmodule(BAR_MODULE_ARGUMENTS){
 
   percentage_to_progressbar(progressbar, progress, 20);
 
-  if (mpd_status == MPDPlaying || mpd_status == MPDPaused){
+  if (localstatus == MPDPlaying || localstatus == MPDPaused){
     snprintf(retstring, bufsize, " %s   %s   %s", localsong, progressbar, localdur);
     strcpy(color, "#dbdbdb");
   }
