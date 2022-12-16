@@ -58,6 +58,7 @@ char *mpc_get_playlist(){
   }
   close(p[0]);
 
+  buffer[ptr] = '\0';
   return buffer;
 }
 
@@ -93,6 +94,7 @@ char *ncmpcpp_get_current_song_lyrics(char *ret_songname, size_t retsize){
     }
   }
   close(fd);
+  filebuffer[ptr] = '\0';
 
   strncpy(ret_songname, buffer, retsize);
 
