@@ -132,6 +132,8 @@ void spawn_devnull(const Arg *arg){
 
 void spawn_catchoutput (const Arg *arg, char *buffer, size_t size){
   int p[2];
+  size_t bread;
+
   if (pipe(p) < 0){
     die("horizonwm: pipe failed on spawn_catchoutput(%s)", ((char **)arg->v)[0]);
   }
@@ -145,8 +147,10 @@ void spawn_catchoutput (const Arg *arg, char *buffer, size_t size){
     die("horizonwm: execvp '%s' failed:", ((char **)arg->v)[0]);
   }
   close(p[1]);
-  read(p[0], buffer, size);
+  bread = read(p[0], buffer, size);
   close(p[0]);
+
+  buffer[bread] = '\0';
 
   return;
 }

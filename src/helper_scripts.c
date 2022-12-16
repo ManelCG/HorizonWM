@@ -26,6 +26,79 @@ int read_file_int(const char *file){
   return atoi(buf);
 }
 
+char *mpc_get_playlist(){
+  int p[2];
+  char *buffer;
+  size_t bufsize = 128;
+  int ptr;
+
+  if (pipe(p) != 0){
+    return NULL;
+  }
+
+  if (fork() == 0){
+    close(1);
+    dup(p[1]);
+    close(p[0]);
+    close(p[1]);
+
+    execlp("mpc", "mpc", "playlist", NULL);
+
+    return NULL;
+  }
+
+  close(p[1]);
+
+  buffer = malloc(bufsize);
+  for (ptr = 0; read(p[0], &buffer[ptr], 1); ptr++){
+    if (ptr + 1 == bufsize){
+      bufsize *= 2;
+      buffer = realloc(buffer, bufsize);
+    }
+  }
+  close(p[0]);
+
+  return buffer;
+}
+
+char *ncmpcpp_get_current_song_lyrics(char *ret_songname, size_t retsize){
+  Arg a;
+  char buffer[128];
+  char buffer_filename[1024];
+  int fd;
+  size_t bufsize = 128;
+  char c;
+  int ptr;
+  char *filebuffer;
+
+  const char *ncmpcpp_get_song[] = {"ncmpcpp", "--current-song=%a - %t", NULL};
+
+  char *homepath = getenv("HOME");
+
+  a.v = ncmpcpp_get_song;
+  spawn_catchoutput(&a, buffer, sizeof(buffer)-1);
+
+  snprintf(buffer_filename, sizeof(buffer_filename)-1, "%s/.lyrics/%s.txt", homepath, buffer);
+
+  fd = open(buffer_filename, O_RDONLY);
+  if (fd < 0){
+    return NULL;
+  }
+
+  filebuffer = malloc(bufsize);
+  for (ptr = 0; read(fd, &filebuffer[ptr], 1); ptr++){
+    if (ptr + 1 == bufsize){
+      bufsize *= 2;
+      filebuffer = realloc(filebuffer, bufsize);
+    }
+  }
+  close(fd);
+
+  strncpy(ret_songname, buffer, retsize);
+
+  return filebuffer;
+}
+
 void switch_keyboard_mapping(){
   const char *map = keyboard_mappings[0];
   int num = 0;

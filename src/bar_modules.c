@@ -263,10 +263,27 @@ int updates_clicked(int mask, int button){
 
 int mpd_status_clicked(int mask, int button){
   Arg a;
+  char *buffer;
+  char songname[128];
+  char buffer_title[256];
   switch(button){
     case 1:
-      //Do
-      return 0;
+      buffer = ncmpcpp_get_current_song_lyrics(songname, sizeof(songname)-1);
+      if (buffer != NULL){
+        snprintf(buffer_title, sizeof(buffer_title)-1, "Lyrics for %s", songname);
+        notify_send_timeout(buffer_title, buffer, 0);
+        free(buffer);
+        return 0;
+      }
+      return -1;
+    case 3:
+      buffer = mpc_get_playlist();
+      if (buffer != NULL){
+        notify_send_timeout("Current playlist:", buffer, 0);
+        free(buffer);
+        return 0;
+      }
+      return -1;
     default:
       return -1;
   }
