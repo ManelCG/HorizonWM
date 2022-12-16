@@ -41,11 +41,11 @@ BarModule bar_modules[] = {
     {updates_barmodule,             updates_clicked,              BAR_MODULE_UPDATES,           1,                0},
 
     //MPD
-    {mpd_next_barmodule,            NULL,                         BAR_MODULE_MPC_NEXT,          0,                0},
-    {mpd_stop_barmodule,            NULL,                         BAR_MODULE_MPC_STOP,          0,                0},
-    {mpd_playpause_barmodule,       NULL,                         BAR_MODULE_MPC_PLAYPAUSE,     0,                0},
-    {mpd_prev_barmodule,            NULL,                         BAR_MODULE_MPC_PREV,          0,                0},
-    {mpd_status_barmodule,          NULL,                         BAR_MODULE_MPC_STATUS,        0,                0},
+    {mpd_next_barmodule,            NULL,                         BAR_MODULE_MPC,               0,                0},
+    {mpd_stop_barmodule,            NULL,                         BAR_MODULE_MPC,               0,                0},
+    {mpd_playpause_barmodule,       NULL,                         BAR_MODULE_MPC,               0,                0},
+    {mpd_prev_barmodule,            NULL,                         BAR_MODULE_MPC,               0,                0},
+    {mpd_status_barmodule,          NULL,                         BAR_MODULE_MPC,               0,                0},
 
     {NULL, NULL, 0, 0, 0}
 };
@@ -93,7 +93,8 @@ int mpd_prev_barmodule(BAR_MODULE_ARGUMENTS){
   pthread_mutex_unlock(&mutex_mpc);
 
   if (localstatus == MPDPlaying || localstatus == MPDPaused){
-    strcpy(retstring, "");
+    strcpy(retstring, " ");
+    strcpy(color, "#dbdbdb");
   } else if (localstatus == MPDStopped){
     return -1;
   }
@@ -109,9 +110,11 @@ int mpd_playpause_barmodule(BAR_MODULE_ARGUMENTS){
   pthread_mutex_unlock(&mutex_mpc);
 
   if (localstatus == MPDPlaying){
-    strcpy(retstring, "");
+    strcpy(retstring, " ");
+    strcpy(color, "#dbdbdb");
   } else if (localstatus == MPDPaused){
-    strcpy(retstring, "");
+    strcpy(retstring, " ");
+    strcpy(color, "#dbdbdb");
   } else if (localstatus == MPDStopped){
     return -1;
   }
@@ -127,7 +130,8 @@ int mpd_stop_barmodule(BAR_MODULE_ARGUMENTS){
   pthread_mutex_unlock(&mutex_mpc);
 
   if (localstatus == MPDPlaying || localstatus == MPDPaused){
-    strcpy(retstring, "");
+    strcpy(retstring, " ");
+    strcpy(color, "#dbdbdb");
   } else if (localstatus == MPDStopped){
     return -1;
   }
@@ -143,7 +147,8 @@ int mpd_next_barmodule(BAR_MODULE_ARGUMENTS){
   pthread_mutex_unlock(&mutex_mpc);
 
   if (localstatus == MPDPlaying || localstatus == MPDPaused){
-    strcpy(retstring, "");
+    strcpy(retstring, " ");
+    strcpy(color, "#dbdbdb");
   } else if (localstatus == MPDStopped){
     return -1;
   }
@@ -170,10 +175,9 @@ int mpd_status_barmodule(BAR_MODULE_ARGUMENTS){
 
   percentage_to_progressbar(progressbar, progress, 20);
 
-  if (mpd_status == MPDPlaying){
-    snprintf(retstring, bufsize, "%s   %s   %s", localsong, progressbar, localdur);
-  } else if (mpd_status == MPDPaused){
-    snprintf(retstring, bufsize, "%s   %s   %s", localsong, progressbar, localdur);
+  if (mpd_status == MPDPlaying || mpd_status == MPDPaused){
+    snprintf(retstring, bufsize, " %s   %s   %s", localsong, progressbar, localdur);
+    strcpy(color, "#dbdbdb");
   }
 
   return 0;
