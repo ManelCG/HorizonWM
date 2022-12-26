@@ -14,7 +14,7 @@ static const unsigned int def_gap_i = 10;       //Default inner gap
 static const unsigned int def_gap_o = 20;       //Default outter gap
 static const unsigned int border_alpha = 0xff;  //Border opacity (opaque)
 
-static const int swallowfloating    = 1;        //Swallow floating windows?
+static const int swallowfloating    = 0;        //Swallow floating windows?
 
 //Bar
 static const int showbar            = 1;       //0 means no bar
