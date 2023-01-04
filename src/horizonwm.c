@@ -1043,8 +1043,15 @@ drawbar(Monitor *m)
 	if ((w = m->ww - modules_textwidth - x) > bh) {
     drw_rect(drw, x, 0, w, bh, 1, 1); //Empty bar all the way to right
 		if (m->sel) {
-			drw_setscheme(drw, scheme[nmons > 1 && m == selmon ? SchemeSel : SchemeNorm]);  //Fills color if more than 1 monitor and selected
-			drw_text(drw, x, bar_hibar, w, bh-(bar_lobar + bar_hibar), lrpad / 2, m->sel->name, 0);
+			drw_setscheme(drw, scheme[SchemeNorm]);
+			drw_text(drw, x, bar_hibar, m->ww - (modules_textwidth + x), bh-(bar_lobar + bar_hibar), lrpad / 2, m->sel->name, 0);
+
+      if (nmons > 1 && m == selmon){
+        //Draw lower and upper bar if they exist
+        drw_rect(drw, x, bar_hibar,      TEXTW(m->sel->name), bar_hibar, 1, 0);
+        drw_rect(drw, x, bh - bar_lobar, TEXTW(m->sel->name), bar_lobar, 1, 0);
+      }
+
 		}
 	}
 
