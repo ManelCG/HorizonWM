@@ -437,8 +437,15 @@ int brightness_barmodule(BAR_MODULE_ARGUMENTS){
   snprintf(brightnessfile_buffer, file_buffer_len, "%s/brightness", BRIGHTNESS_FOLDER);
   snprintf(max_brightnessfile_buffer, file_buffer_len, "%s/max_brightness", BRIGHTNESS_FOLDER);
 
-  int brightness = read_file_int(brightnessfile_buffer);
-  int max_brightness = read_file_int(max_brightnessfile_buffer);
+  int brightness;
+  int max_brightness;
+
+  if (read_file_int(brightnessfile_buffer, &brightness) != 0){
+    return -1;
+  }
+  if (read_file_int(max_brightnessfile_buffer, &max_brightness) != 0){
+    return -1;
+  }
   int percent = 100 * brightness / max_brightness;
 
   char progressbar[DEFAULT_PROGRESS_BAR_SIZE];
@@ -461,6 +468,7 @@ int battery_status_barmodule(BAR_MODULE_ARGUMENTS){
   float charge_now;
   float percentf;
   int percent;
+  int aux;
 
   int oldstatus;
 
@@ -471,13 +479,20 @@ int battery_status_barmodule(BAR_MODULE_ARGUMENTS){
   snprintf(battery_folder_buf, folderbufsize, "%s%d", BATTERY_STATUS_FOLDER, selected_battery);
 
   snprintf(file_buf, folderbufsize + 32, "%s/%s", battery_folder_buf, "charge_now");
-  charge_now = read_file_float(file_buf);
+  if (read_file_float(file_buf, &charge_now) != 0){
+    return -1;
+  }
 
   snprintf(file_buf, folderbufsize + 32, "%s/%s", battery_folder_buf, "charge_full");
-  charge_max = read_file_float(file_buf);
+  if (read_file_float(file_buf, &charge_max) != 0){
+    return -1;
+  }
 
   snprintf(AC_online_file_buf, strlen(AC_ADAPTER_FOLDER) + 32, "%s%d/online", AC_ADAPTER_FOLDER, 0);
-  is_charging = read_file_int(AC_online_file_buf)? true : false;
+  if (read_file_int(AC_online_file_buf, &aux) != 0){
+    return -1;
+  }
+  is_charging = aux == 1? true : false;
 
   //If battery is at 99.something, show it as 100.
   percentf = 100*charge_now/charge_max;

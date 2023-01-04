@@ -11,19 +11,29 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-float read_file_float(const char *file){
+int read_file_float(const char *file, float *dest){
   char buf[128];
   int fd = open(file, O_RDONLY);
+  if (fd < 0){
+    return fd;
+  }
   read(fd, buf, 128);
   close(fd);
-  return atof(buf);
+
+  *dest = atof(buf);
+  return 0;
 }
-int read_file_int(const char *file){
+int read_file_int(const char *file, int *dest){
   char buf[128];
   int fd = open(file, O_RDONLY);
+  if (fd < 0){
+    return fd;
+  }
   read(fd, buf, 128);
   close(fd);
-  return atoi(buf);
+
+  *dest = atoi(buf);
+  return 0;
 }
 
 char *mpc_get_playlist(){

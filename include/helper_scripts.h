@@ -12,8 +12,8 @@ void notify_send_timeout_critical(const char *title, const char *text, int timeo
 void scripts_take_screenshot(const Arg *a);
 void scripts_set_keyboard_mapping(const Arg *a);
 
-float read_file_float(const char *file);
-int read_file_int(const char *file);
+int read_file_float(const char *file, float *dest);
+int read_file_int(const char *file, int *dest);
 
 int percentage_to_progressbar(char *buffer, int pctg, int len);
 
